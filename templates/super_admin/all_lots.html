@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}All Lots - Super Admin - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-building"></i> All Parking Lots</h2>
+
+<div class="card">
+    <div class="card-body">
+        {% if lots %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Lot Name</th>
+                            <th>Address</th>
+                            <th>Pincode</th>
+                            <th>Admin</th>
+                            <th>Total Slots</th>
+                            <th>Occupied</th>
+                            <th>Availability</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lot in lots %}
+                        <tr>
+                            <td><strong>{{ lot.name }}</strong></td>
+                            <td>{{ lot.address }}</td>
+                            <td>{{ lot.pincode }}</td>
+                            <td>{{ lot.admin.name }}</td>
+                            <td><span class="badge bg-primary">{{ lot.total_slots }}</span></td>
+                            <td><span class="badge bg-danger">{{ lot.occupied_slots }}</span></td>
+                            <td>
+                                {% set available = lot.total_slots - lot.occupied_slots %}
+                                <div class="progress" style="height: 20px;">
+                                    {% if lot.total_slots > 0 %}
+                                        {% set percentage = (available / lot.total_slots * 100) %}
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ percentage }}%">
+                                            {{ available }} Available
+                                        </div>
+                                    {% else %}
+                                        <div class="progress-bar bg-secondary" role="progressbar" style="width: 100%">
+                                            No Slots
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No parking lots created yet</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Slots - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-parking"></i> Manage Parking Lots & Slots</h2>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-plus"></i> Create New Parking Lot</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('manage_slots') }}">
+                    {{ lot_form.hidden_tag() }}
+                    <input type="hidden" name="create_lot" value="1">
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ lot_form.name.label(class="form-label") }}
+                            {{ lot_form.name(class="form-control" + (" is-invalid" if lot_form.name.errors else "")) }}
+                            {% if lot_form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in lot_form.name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            {{ lot_form.address.label(class="form-label") }}
+                            {{ lot_form.address(class="form-control" + (" is-invalid" if lot_form.address.errors else "")) }}
+                            {% if lot_form.address.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in lot_form.address.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-2">
+                            {{ lot_form.pincode.label(class="form-label") }}
+                            {{ lot_form.pincode(class="form-control" + (" is-invalid" if lot_form.pincode.errors else "")) }}
+                            {% if lot_form.pincode.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in lot_form.pincode.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-2">
+                            {{ lot_form.total_slots.label(class="form-label") }}
+                            {{ lot_form.total_slots(class="form-control" + (" is-invalid" if lot_form.total_slots.errors else "")) }}
+                            {% if lot_form.total_slots.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in lot_form.total_slots.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-plus"></i> Create Lot
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% for lot in lots %}
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-building"></i> {{ lot.name }}
+            <span class="badge bg-light text-dark float-end">{{ lot.slots|length }} Slots</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <p><i class="fas fa-map-marker-alt"></i> {{ lot.address }} - {{ lot.pincode }}</p>
+        
+        <button class="btn btn-sm btn-primary mb-3" data-bs-toggle="collapse" data-bs-target="#addSlot{{ loop.index }}">
+            <i class="fas fa-plus"></i> Add Slot
+        </button>
+        
+        <div class="collapse" id="addSlot{{ loop.index }}">
+            <div class="card card-body mb-3">
+                <form method="POST" action="{{ url_for('add_slot', lot_id=lot._id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <input type="text" name="slot_number" class="form-control" placeholder="Slot Number" required>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="slot_type" class="form-select" required>
+                                <option value="2-wheeler">2-Wheeler</option>
+                                <option value="4-wheeler">4-Wheeler</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="number" step="0.01" name="price_per_hour" class="form-control" placeholder="Price/Hour" required>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-success w-100">Add</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if lot.slots %}
+            <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Slot Number</th>
+                            <th>Type</th>
+                            <th>Price/Hour</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot in lot.slots %}
+                        <tr>
+                            <td><strong>{{ slot.slot_number }}</strong></td>
+                            <td><span class="badge bg-info">{{ slot.slot_type }}</span></td>
+                            <td>₹{{ "%.2f"|format(slot.price_per_hour) }}</td>
+                            <td>
+                                {% if slot.status == 'available' %}
+                                    <span class="badge bg-success">Available</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Occupied</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('delete_slot', slot_id=slot._id) }}" 
+                                   class="btn btn-sm btn-danger"
+                                   onclick="return confirm('Delete this slot?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No slots added yet</p>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+{% if not lots %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No parking lots created yet. Create your first parking lot above!
+    </div>
+{% endif %}
+{% endblock %}

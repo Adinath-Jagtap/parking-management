@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-building"></i> Total Lots</h5>
+                <h2>{{ total_lots }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-parking"></i> Total Slots</h5>
+                <h2>{{ total_slots }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-car"></i> Occupied</h5>
+                <h2>{{ occupied_slots }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-rupee-sign"></i> Revenue</h5>
+                <h2>₹{{ "%.2f"|format(total_revenue) }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Statistics</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Total Bookings:</strong> {{ total_bookings }}</p>
+                <p><strong>Occupancy Rate:</strong> {{ "%.2f"|format(occupancy_rate) }}%</p>
+                <div class="progress">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: {{ occupancy_rate }}%">
+                        {{ "%.0f"|format(occupancy_rate) }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tools"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('manage_slots') }}" class="btn btn-primary btn-block mb-2 w-100">
+                    <i class="fas fa-parking"></i> Manage Slots
+                </a>
+                <a href="{{ url_for('lot_users') }}" class="btn btn-info btn-block mb-2 w-100">
+                    <i class="fas fa-users"></i> View Lot Users
+                </a>
+                <a href="{{ url_for('admin_invoices') }}" class="btn btn-success btn-block w-100">
+                    <i class="fas fa-file-invoice"></i> View Invoices
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-history"></i> Recent Bookings</h5>
+    </div>
+    <div class="card-body">
+        {% if recent_bookings %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Vehicle</th>
+                            <th>Slot</th>
+                            <th>Entry Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in recent_bookings %}
+                        <tr>
+                            <td>{{ booking.user.name }}</td>
+                            <td>{{ booking.vehicle.vehicle_number }}</td>
+                            <td><span class="badge bg-primary">{{ booking.slot.slot_number }}</span></td>
+                            <td>{{ booking.entry_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if booking.status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Completed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No bookings yet</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

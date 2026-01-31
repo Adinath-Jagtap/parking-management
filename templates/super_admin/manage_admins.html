@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Admins - Super Admin - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-user-shield"></i> Manage Admins</h2>
+
+{% if pending_admins %}
+<div class="card mb-4">
+    <div class="card-header bg-warning">
+        <h5 class="mb-0"><i class="fas fa-hourglass-half"></i> Pending Verification ({{ pending_admins|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Registered On</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admin in pending_admins %}
+                    <tr>
+                        <td>{{ admin.name }}</td>
+                        <td>{{ admin.email }}</td>
+                        <td>{{ admin.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <a href="{{ url_for('verify_admin', admin_id=admin._id) }}" 
+                               class="btn btn-sm btn-success"
+                               onclick="return confirm('Verify this admin?')">
+                                <i class="fas fa-check"></i> Verify
+                            </a>
+                            <a href="{{ url_for('reject_admin', admin_id=admin._id) }}" 
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('Reject this admin registration?')">
+                                <i class="fas fa-times"></i> Reject
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="fas fa-check-circle"></i> Verified Admins ({{ verified_admins|length }})</h5>
+    </div>
+    <div class="card-body">
+        {% if verified_admins %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Parking Lots</th>
+                            <th>Verified On</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for admin in verified_admins %}
+                        <tr>
+                            <td>{{ admin.name }}</td>
+                            <td>{{ admin.email }}</td>
+                            <td><span class="badge bg-primary">{{ admin.lots_count }}</span></td>
+                            <td>{{ admin.created_at.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No verified admins yet</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

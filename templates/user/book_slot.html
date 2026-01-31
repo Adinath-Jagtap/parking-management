@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Book Slot - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-parking"></i> Book Parking Slot</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-building"></i> {{ lot.name }}</h5>
+            </div>
+            <div class="card-body">
+                <p><i class="fas fa-map-marker-alt"></i> <strong>Address:</strong> {{ lot.address }}</p>
+                <p><i class="fas fa-mail-bulk"></i> <strong>Pincode:</strong> {{ lot.pincode }}</p>
+                <hr>
+                <h6>Available Slots:</h6>
+                <div class="row text-center mt-3">
+                    <div class="col-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 class="text-success">{{ slots_2w }}</h3>
+                                <small>2-Wheeler Slots</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 class="text-success">{{ slots_4w }}</h3>
+                                <small>4-Wheeler Slots</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-check"></i> Book Your Slot</h5>
+            </div>
+            <div class="card-body">
+                {% if available_slots > 0 %}
+                    <form method="POST" action="{{ url_for('book_slot', lot_id=lot._id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.vehicle_id.label(class="form-label") }}
+                            {{ form.vehicle_id(class="form-select" + (" is-invalid" if form.vehicle_id.errors else "")) }}
+                            {% if form.vehicle_id.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.vehicle_id.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Select which vehicle you want to park</small>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            A suitable slot will be automatically assigned based on your vehicle type.
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check"></i> Confirm Booking
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        No available slots at this parking lot. Please try another location.
+                    </div>
+                    <a href="{{ url_for('parking_lots') }}" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Find Other Parking Lots
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('parking_lots') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Parking Lots
+    </a>
+</div>
+{% endblock %}

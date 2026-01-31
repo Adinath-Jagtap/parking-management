@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}User Dashboard - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-car"></i> Active Bookings</h5>
+                <h2>{{ active_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-history"></i> Total Bookings</h5>
+                <h2>{{ total_bookings }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-rupee-sign"></i> Total Spent</h5>
+                <h2>₹{{ "%.2f"|format(total_spent) }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-file-invoice"></i> Invoices</h5>
+                <h2>{{ recent_invoices|length }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-parking"></i> Active Bookings</h5>
+            </div>
+            <div class="card-body">
+                {% if active_bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Lot Name</th>
+                                    <th>Slot</th>
+                                    <th>Vehicle</th>
+                                    <th>Entry Time</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in active_bookings %}
+                                <tr>
+                                    <td>{{ booking.lot.name }}</td>
+                                    <td>{{ booking.slot.slot_number }}</td>
+                                    <td>{{ booking.vehicle.vehicle_number }}</td>
+                                    <td>{{ booking.entry_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('exit_booking', booking_id=booking._id) }}" 
+                                           class="btn btn-sm btn-danger"
+                                           onclick="return confirm('Complete parking and generate invoice?')">
+                                            <i class="fas fa-sign-out-alt"></i> Exit
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No active bookings</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-receipt"></i> Recent Invoices</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_invoices %}
+                    <ul class="list-group list-group-flush">
+                        {% for invoice in recent_invoices %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ invoice.invoice_number }}</span>
+                            <span class="badge bg-success">₹{{ "%.2f"|format(invoice.amount) }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <a href="{{ url_for('invoices') }}" class="btn btn-sm btn-outline-primary mt-3 w-100">View All</a>
+                {% else %}
+                    <p class="text-muted">No invoices yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-book"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('parking_lots') }}" class="btn btn-primary me-2">
+                    <i class="fas fa-search"></i> Find Parking
+                </a>
+                <a href="{{ url_for('my_vehicles') }}" class="btn btn-success me-2">
+                    <i class="fas fa-car"></i> Manage Vehicles
+                </a>
+                <a href="{{ url_for('my_bookings') }}" class="btn btn-info me-2">
+                    <i class="fas fa-history"></i> Booking History
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

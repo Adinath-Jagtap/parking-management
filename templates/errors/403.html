@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}403 - Access Forbidden{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <i class="fas fa-ban fa-5x text-danger mb-4"></i>
+    <h1 class="display-4">403</h1>
+    <h2 class="mb-4">Access Forbidden</h2>
+    <p class="lead">You don't have permission to access this resource.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary">
+        <i class="fas fa-home"></i> Go to Homepage
+    </a>
+</div>
+{% endblock %}

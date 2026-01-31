@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Super Admin Dashboard - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-crown"></i> Super Admin Dashboard</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-users"></i> Total Users</h5>
+                <h2>{{ total_users }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-user-shield"></i> Admins</h5>
+                <h2>{{ total_admins }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-hourglass-half"></i> Pending Admins</h5>
+                <h2>{{ pending_admins }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-building"></i> Total Lots</h5>
+                <h2>{{ total_lots }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-secondary text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-parking"></i> Total Slots</h5>
+                <h2>{{ total_slots }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-dark text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-calendar-check"></i> Total Bookings</h5>
+                <h2>{{ total_bookings }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-rupee-sign"></i> Total Revenue</h5>
+                <h2>₹{{ "%.2f"|format(total_revenue) }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-user-plus"></i> Recent Users</h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% if recent_users %}
+                    <ul class="list-group list-group-flush">
+                        {% for user in recent_users %}
+                        <li class="list-group-item">
+                            <strong>{{ user.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ user.email }}</small>
+                            <br>
+                            <small class="text-muted">Joined: {{ user.created_at.strftime('%Y-%m-%d') }}</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">No users yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Recent Bookings</h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% if recent_bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Vehicle</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in recent_bookings %}
+                                <tr>
+                                    <td>{{ booking.user.name }}</td>
+                                    <td>{{ booking.vehicle.vehicle_number }}</td>
+                                    <td>{{ booking.entry_time.strftime('%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No bookings yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tools"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('manage_admins') }}" class="btn btn-primary me-2">
+                    <i class="fas fa-user-shield"></i> Manage Admins
+                </a>
+                <a href="{{ url_for('all_users') }}" class="btn btn-success me-2">
+                    <i class="fas fa-users"></i> All Users
+                </a>
+                <a href="{{ url_for('all_lots') }}" class="btn btn-info me-2">
+                    <i class="fas fa-building"></i> All Lots
+                </a>
+                <a href="{{ url_for('platform_analytics') }}" class="btn btn-warning">
+                    <i class="fas fa-chart-bar"></i> Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

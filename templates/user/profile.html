@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-user"></i> My Profile</h2>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-edit"></i> Update Profile</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('user_profile') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" name="name" class="form-control" value="{{ user.name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" value="{{ user.email }}" disabled>
+                        <small class="text-muted">Email cannot be changed</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Language</label>
+                        <select name="language" class="form-select">
+                            {% for code, name in languages.items() %}
+                                <option value="{{ code }}" {% if user.language == code %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Profile Image</label>
+                        <input type="file" name="profile_image" class="form-control" accept="image/*">
+                        <small class="text-muted">Max 5MB. Allowed: jpg, jpeg, png, gif</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Profile
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Account Info</h5>
+            </div>
+            <div class="card-body text-center">
+                {% if user.profile_image %}
+                    <img src="{{ url_for('static', filename='uploads/' + user.profile_image) }}" 
+                         class="img-thumbnail mb-3" style="max-width: 200px;">
+                {% else %}
+                    <i class="fas fa-user-circle fa-5x text-secondary mb-3"></i>
+                {% endif %}
+                
+                <h5>{{ user.name }}</h5>
+                <p class="text-muted">{{ user.email }}</p>
+                <p><span class="badge bg-info">{{ user.role.upper() }}</span></p>
+                <p class="small text-muted">Joined: {{ user.created_at.strftime('%Y-%m-%d') }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

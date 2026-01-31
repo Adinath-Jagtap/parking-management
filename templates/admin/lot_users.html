@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Lot Users - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-users"></i> Users Who Parked in My Lots</h2>
+
+<div class="card">
+    <div class="card-body">
+        {% if users %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Vehicles</th>
+                            <th>Total Bookings</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.vehicles %}
+                                    {% for vehicle in user.vehicles %}
+                                        <span class="badge bg-primary me-1">{{ vehicle.vehicle_number }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">No vehicles</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-success">{{ user.booking_count }}</span></td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No users have parked in your lots yet</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
