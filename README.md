@@ -4,6 +4,8 @@ Production-ready parking management web application with user, admin, and super 
 
 ## Features
 
+
+
 ### User Features
 - Register and login
 - View available parking lots
