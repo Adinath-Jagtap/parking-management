@@ -696,7 +696,7 @@ def manage_slots():
                     })
                     slot_num += 1
                 
-                # Create 4-wheeler slots
+                # Create 4-wheeler   slots
                 slot_num = 1
                 for i in range(four_wheeler_count):
                     slots_to_create.append({
