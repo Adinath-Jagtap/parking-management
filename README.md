@@ -141,6 +141,3 @@ parking-management/
 - File upload validation
 - Secure filename handling
 - Input validation and sanitization
-
-
-## MADE BY ADINATH JAGTAP
