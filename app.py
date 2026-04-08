@@ -311,6 +311,56 @@ def reset_password():
     
     return render_template('auth/reset_password.html', form=form)
 
+@app.route('/user/vehicle/regenerate-qr/<vehicle_id>')
+@login_required
+@role_required('user')
+def regenerate_vehicle_qr(vehicle_id):
+    try:
+        vehicle = vehicles_collection.find_one({
+            '_id': ObjectId(vehicle_id),
+            'user_id': ObjectId(current_user.id)
+        })
+        if not vehicle:
+            flash('Vehicle not found.', 'danger')
+            return redirect(url_for('my_vehicles'))
+
+        # Generate new token
+        new_token = secrets.token_urlsafe(16)
+
+        # Generate new QR with new token
+        qr_data = json.dumps({
+            'vehicle_id': str(vehicle['_id']),
+            'vehicle_number': vehicle['vehicle_number'],
+            'qr_token': new_token,
+            'type': 'parking_qr'
+        })
+        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=10, border=4)
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color='black', back_color='white')
+
+        buffer = BytesIO()
+        qr_img.save(buffer, format='PNG')
+        buffer.seek(0)
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+        # Update both token AND QR image together — they always stay in sync
+        vehicles_collection.update_one(
+            {'_id': ObjectId(vehicle_id)},
+            {'$set': {
+                'qr_token': new_token,
+                'qr_code_base64': qr_base64,
+                'qr_generated_at': datetime.now()
+            }}
+        )
+
+        flash('QR code regenerated successfully! Please download the new QR.', 'success')
+    except Exception as e:
+        logger.error(f'Regenerate QR error: {str(e)}')
+        flash('Failed to regenerate QR code.', 'danger')
+
+    return redirect(url_for('my_vehicles'))
+
 # Routes - Dashboard
 @app.route('/dashboard')
 @login_required
