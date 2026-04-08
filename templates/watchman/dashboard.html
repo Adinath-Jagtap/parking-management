@@ -1,0 +1,855 @@
+{% extends "base.html" %}
+
+{% block title %}Watchman Dashboard - {{ lot.name }}{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --wm-primary: #1e293b;
+        --wm-accent: #6366f1;
+        --wm-accent-light: #818cf8;
+        --wm-success: #10b981;
+        --wm-warning: #f59e0b;
+        --wm-danger: #ef4444;
+        --wm-info: #3b82f6;
+        --wm-surface: #f8fafc;
+        --wm-card-bg: #ffffff;
+        --wm-text: #1e293b;
+        --wm-text-muted: #64748b;
+        --wm-border: #e2e8f0;
+        --wm-gradient-1: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        --wm-gradient-2: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        --wm-gradient-3: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        --wm-gradient-4: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+
+    .wm-header {
+        background: var(--wm-gradient-1);
+        border-radius: 16px;
+        padding: 28px 32px;
+        margin-bottom: 28px;
+        color: white;
+        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.25);
+    }
+    .wm-header h2 {
+        font-weight: 700;
+        font-size: 1.6rem;
+        margin: 0;
+    }
+    .wm-header .lot-label {
+        opacity: 0.85;
+        font-size: 0.95rem;
+        margin-top: 4px;
+    }
+
+    /* Stats cards */
+    .stat-card {
+        border-radius: 14px;
+        padding: 22px 20px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+    }
+    .stat-card .stat-icon {
+        font-size: 2.2rem;
+        opacity: 0.3;
+        position: absolute;
+        right: 16px;
+        top: 16px;
+    }
+    .stat-card .stat-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+    .stat-card .stat-label {
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.9;
+        margin-top: 6px;
+    }
+    .stat-total { background: var(--wm-gradient-4); }
+    .stat-occupied { background: var(--wm-gradient-3); }
+    .stat-available { background: var(--wm-gradient-2); }
+
+    /* Scanner section */
+    .scanner-section {
+        background: var(--wm-card-bg);
+        border-radius: 16px;
+        border: 1px solid var(--wm-border);
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        padding: 28px;
+        margin-bottom: 28px;
+    }
+    .scanner-section h4 {
+        font-weight: 700;
+        color: var(--wm-primary);
+        margin-bottom: 20px;
+    }
+
+    /* html5-qrcode reader container */
+    #qr-reader {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+    #qr-reader video {
+        border-radius: 14px;
+    }
+    /* Override html5-qrcode default styles */
+    #qr-reader__scan_region {
+        min-height: 250px;
+    }
+    #qr-reader__dashboard {
+        padding: 10px !important;
+    }
+    #qr-reader__dashboard_section_csr button {
+        background: var(--wm-accent) !important;
+        color: white !important;
+        border: none !important;
+        padding: 10px 24px !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+    }
+    #qr-reader__dashboard_section_csr button:hover {
+        background: var(--wm-accent-light) !important;
+    }
+    #qr-reader__status_span {
+        display: none !important;
+    }
+
+    /* Scan method tabs */
+    .scan-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .scan-tab {
+        padding: 10px 24px;
+        border-radius: 10px;
+        border: 2px solid var(--wm-border);
+        background: white;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--wm-text-muted);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .scan-tab:hover { border-color: var(--wm-accent); color: var(--wm-accent); }
+    .scan-tab.active {
+        background: var(--wm-accent);
+        color: white;
+        border-color: var(--wm-accent);
+    }
+
+    /* Upload zone */
+    .upload-zone {
+        border: 3px dashed var(--wm-border);
+        border-radius: 14px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: var(--wm-surface);
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+        border-color: var(--wm-accent);
+        background: #eef2ff;
+    }
+    .upload-zone i { font-size: 3rem; color: var(--wm-accent); opacity: 0.5; }
+    .upload-zone p { margin-top: 12px; color: var(--wm-text-muted); font-weight: 500; }
+
+    /* Result card */
+    .result-card {
+        border-radius: 14px;
+        padding: 24px;
+        margin-top: 20px;
+        display: none;
+        animation: slideUp 0.35s ease;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .result-card.show { display: block; }
+    .result-card-checkin {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border-left: 5px solid var(--wm-success);
+        color: #064e3b;
+    }
+    .result-card-checkout {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border-left: 5px solid var(--wm-info);
+        color: #1e3a5f;
+    }
+    .result-card-error {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border-left: 5px solid var(--wm-danger);
+        color: #7f1d1d;
+    }
+    .result-card .result-icon { font-size: 2rem; margin-bottom: 10px; }
+    .result-card .result-action {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-weight: 700;
+        opacity: 0.8;
+    }
+    .result-card .result-message { font-size: 1.05rem; font-weight: 600; margin-top: 6px; }
+    .result-card .result-details { margin-top: 12px; font-size: 0.9rem; opacity: 0.85; }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Manual entry */
+    .manual-section {
+        border-top: 1px solid var(--wm-border);
+        padding-top: 20px;
+        margin-top: 24px;
+    }
+
+    /* Recent logs */
+    .logs-section {
+        background: var(--wm-card-bg);
+        border-radius: 16px;
+        border: 1px solid var(--wm-border);
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        padding: 28px;
+    }
+    .logs-section h4 {
+        font-weight: 700;
+        color: var(--wm-primary);
+        margin-bottom: 16px;
+    }
+    .log-entry {
+        display: flex;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        background: var(--wm-surface);
+        transition: background 0.2s;
+    }
+    .log-entry:hover { background: #eef2ff; }
+    .log-action-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 14px;
+        flex-shrink: 0;
+        font-size: 0.85rem;
+        color: white;
+    }
+    .log-action-icon.checkin { background: var(--wm-success); }
+    .log-action-icon.checkout { background: var(--wm-info); }
+    .log-action-icon.error { background: var(--wm-danger); }
+    .log-action-icon.denied { background: var(--wm-warning); }
+    .log-details { flex: 1; min-width: 0; }
+    .log-details .log-msg {
+        font-weight: 600;
+        font-size: 0.88rem;
+        color: var(--wm-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .log-details .log-meta {
+        font-size: 0.78rem;
+        color: var(--wm-text-muted);
+        margin-top: 2px;
+    }
+
+    /* Processing spinner */
+    .processing-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.6);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+    .processing-overlay.show { display: flex; }
+    .processing-box {
+        background: white;
+        border-radius: 16px;
+        padding: 40px 48px;
+        text-align: center;
+        box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+    }
+    .processing-box .spinner-border {
+        width: 3rem; height: 3rem;
+        color: var(--wm-accent);
+    }
+    .processing-box p {
+        margin-top: 16px;
+        font-weight: 600;
+        color: var(--wm-text);
+    }
+</style>
+
+<!-- Processing overlay -->
+<div class="processing-overlay" id="processingOverlay">
+    <div class="processing-box">
+        <div class="spinner-border" role="status"></div>
+        <p>Processing scan...</p>
+    </div>
+</div>
+
+<!-- Header -->
+<div class="wm-header">
+    <div class="d-flex align-items-center justify-content-between flex-wrap">
+        <div>
+            <h2><i class="fas fa-shield-alt me-2"></i>Watchman Dashboard</h2>
+            <div class="lot-label"><i class="fas fa-map-marker-alt me-1"></i> {{ lot.name }} — {{ lot.address }}</div>
+        </div>
+        <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+            <span class="badge bg-light text-dark px-3 py-2" style="font-size:0.85rem;">
+                <i class="fas fa-user-shield me-1"></i> {{ current_user.name }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-4">
+        <div class="stat-card stat-total">
+            <i class="fas fa-parking stat-icon"></i>
+            <div class="stat-value" id="statTotal">{{ total_slots }}</div>
+            <div class="stat-label">Total Slots</div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="stat-card stat-occupied">
+            <i class="fas fa-car stat-icon"></i>
+            <div class="stat-value" id="statOccupied">{{ occupied }}</div>
+            <div class="stat-label">Occupied</div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="stat-card stat-available">
+            <i class="fas fa-check-circle stat-icon"></i>
+            <div class="stat-value" id="statAvailable">{{ available }}</div>
+            <div class="stat-label">Available</div>
+        </div>
+    </div>
+</div>
+
+<!-- Scanner Section -->
+<div class="scanner-section">
+    <h4><i class="fas fa-qrcode me-2"></i>QR Code Scanner</h4>
+
+    <!-- Scan method tabs -->
+    <div class="scan-tabs">
+        <div class="scan-tab active" id="tabCamera" onclick="switchTab('camera')">
+            <i class="fas fa-camera"></i> Camera Scan
+        </div>
+        <div class="scan-tab" id="tabUpload" onclick="switchTab('upload')">
+            <i class="fas fa-image"></i> Upload QR Image
+        </div>
+        <div class="scan-tab" id="tabManual" onclick="switchTab('manual')">
+            <i class="fas fa-keyboard"></i> Manual Entry
+        </div>
+    </div>
+
+    <!-- Camera scan panel -->
+    <div id="panelCamera">
+        <div id="qr-reader"></div>
+    </div>
+
+    <!-- Upload QR image panel -->
+    <div id="panelUpload" style="display:none;">
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('qrFileInput').click()">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Click to upload or drag & drop a QR code screenshot</p>
+            <small class="text-muted">Supports PNG, JPG, JPEG</small>
+        </div>
+        <input type="file" id="qrFileInput" accept="image/*" style="display:none;" onchange="handleFileUpload(event)">
+    </div>
+
+    <!-- Manual entry panel -->
+    <div id="panelManual" style="display:none;">
+        <div style="max-width:500px; margin:0 auto;">
+            <p class="text-muted mb-2" style="font-size:0.88rem;">
+                <i class="fas fa-info-circle me-1"></i> Paste the QR code JSON data below:
+            </p>
+            <div class="input-group">
+                <input type="text" class="form-control" id="manualQrInput" placeholder='{"vehicle_id":"...","vehicle_number":"...","qr_token":"..."}' />
+                <button class="btn btn-primary" type="button" onclick="submitManualQr()">
+                    <i class="fas fa-paper-plane me-1"></i> Submit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Card -->
+    <div class="result-card" id="resultCard">
+        <div class="text-center">
+            <div class="result-icon" id="resultIcon"></div>
+            <div class="result-action" id="resultAction"></div>
+            <div class="result-message" id="resultMessage"></div>
+            <div class="result-details" id="resultDetails"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Scan Logs -->
+<div class="logs-section">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h4 class="mb-0"><i class="fas fa-history me-2"></i>Recent Scans</h4>
+        <button class="btn btn-sm btn-outline-primary" onclick="loadRecentScans()">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </div>
+    <div id="logsContainer">
+        {% if recent_logs %}
+            {% for log in recent_logs %}
+            <div class="log-entry">
+                <div class="log-action-icon 
+                    {% if log.action == 'checkin' %}checkin
+                    {% elif log.action == 'checkout' %}checkout
+                    {% elif log.action in ['checkin_denied', 'checkout_denied'] %}denied
+                    {% else %}error{% endif %}">
+                    {% if log.action == 'checkin' %}<i class="fas fa-arrow-right"></i>
+                    {% elif log.action == 'checkout' %}<i class="fas fa-arrow-left"></i>
+                    {% elif log.action in ['checkin_denied', 'checkout_denied'] %}<i class="fas fa-ban"></i>
+                    {% else %}<i class="fas fa-exclamation"></i>{% endif %}
+                </div>
+                <div class="log-details">
+                    <div class="log-msg">{{ log.result_message }}</div>
+                    <div class="log-meta">
+                        {% if log.vehicle_number %}<i class="fas fa-car me-1"></i>{{ log.vehicle_number }} · {% endif %}
+                        <i class="fas fa-clock me-1"></i>{{ log.timestamp.strftime('%d %b, %I:%M %p') }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center text-muted py-4" id="noLogsMsg">
+                <i class="fas fa-inbox" style="font-size:2rem; opacity:0.3;"></i>
+                <p class="mt-2 mb-0">No scans yet. Start scanning QR codes!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- html5-qrcode: production-grade QR scanner library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+    const CSRF_TOKEN = '{{ csrf_token() }}';
+    let html5QrCode = null;
+    let scannerRunning = false;
+
+    // ============ TAB SWITCHING ============
+    function switchTab(tab) {
+        // Stop camera if switching away
+        if (tab !== 'camera' && scannerRunning) {
+            stopCameraScanner();
+        }
+
+        document.getElementById('panelCamera').style.display = tab === 'camera' ? 'block' : 'none';
+        document.getElementById('panelUpload').style.display = tab === 'upload' ? 'block' : 'none';
+        document.getElementById('panelManual').style.display = tab === 'manual' ? 'block' : 'none';
+
+        document.getElementById('tabCamera').classList.toggle('active', tab === 'camera');
+        document.getElementById('tabUpload').classList.toggle('active', tab === 'upload');
+        document.getElementById('tabManual').classList.toggle('active', tab === 'manual');
+
+        // Auto-start camera when switching to camera tab
+        if (tab === 'camera' && !scannerRunning) {
+            startCameraScanner();
+        }
+    }
+
+    // ============ CAMERA SCANNER (html5-qrcode) ============
+    function startCameraScanner() {
+        if (scannerRunning) return;
+
+        html5QrCode = new Html5Qrcode("qr-reader");
+
+        const config = {
+            fps: 10,
+            qrbox: function(viewfinderWidth, viewfinderHeight) {
+                let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                let qrboxSize = Math.max(200, Math.floor(minEdge * 0.7));
+                return { width: qrboxSize, height: qrboxSize };
+            },
+            rememberLastUsedCamera: true,
+            showTorchButtonIfSupported: true
+        };
+
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            onScanSuccess,
+            onScanFailure
+        ).then(() => {
+            scannerRunning = true;
+            console.log('Camera scanner started');
+        }).catch(err => {
+            console.warn('Back camera failed, trying any camera:', err);
+            // Fallback: try any available camera
+            Html5Qrcode.getCameras().then(cameras => {
+                if (cameras && cameras.length > 0) {
+                    html5QrCode.start(
+                        cameras[0].id,
+                        config,
+                        onScanSuccess,
+                        onScanFailure
+                    ).then(() => {
+                        scannerRunning = true;
+                        console.log('Camera scanner started with:', cameras[0].label);
+                    }).catch(err2 => {
+                        console.error('All cameras failed:', err2);
+                        showCameraError(err2);
+                    });
+                } else {
+                    showCameraError(new Error('No cameras found'));
+                }
+            }).catch(err2 => {
+                console.error('Camera enumeration failed:', err2);
+                showCameraError(err2);
+            });
+        });
+    }
+
+    function showCameraError(err) {
+        const reader = document.getElementById('qr-reader');
+        reader.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-video-slash" style="font-size:3rem; color:var(--wm-danger); opacity:0.5;"></i>
+                <p class="mt-3 mb-1" style="font-weight:600; color:var(--wm-text);">Camera not available</p>
+                <p class="text-muted" style="font-size:0.85rem;">
+                    ${err.message || 'Could not access camera'}<br>
+                    <strong>Use "Upload QR Image" or "Manual Entry" tab instead.</strong>
+                </p>
+                ${location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1' 
+                    ? '<p class="text-warning mt-2" style="font-size:0.8rem;"><i class="fas fa-exclamation-triangle me-1"></i>Camera requires HTTPS. Deploy to Render or use localhost.</p>' 
+                    : ''}
+            </div>`;
+    }
+
+    function stopCameraScanner() {
+        if (html5QrCode && scannerRunning) {
+            html5QrCode.stop().then(() => {
+                scannerRunning = false;
+                console.log('Camera scanner stopped');
+            }).catch(err => console.error('Stop error:', err));
+        }
+    }
+
+    let lastProcessedData = null;
+    let processingCooldown = false;
+
+    function onScanSuccess(decodedText, decodedResult) {
+        // Prevent double-processing of same QR within 5 seconds
+        if (processingCooldown) return;
+        if (decodedText === lastProcessedData) return;
+
+        lastProcessedData = decodedText;
+        processingCooldown = true;
+
+        // Pause scanner, process, then resume
+        stopCameraScanner();
+        processQrData(decodedText).then(() => {
+            // Wait 3 seconds before allowing next scan
+            setTimeout(() => {
+                processingCooldown = false;
+                lastProcessedData = null;
+                startCameraScanner();
+            }, 3000);
+        });
+    }
+
+    function onScanFailure(error) {
+        // Silence - normal when no QR is visible
+    }
+
+    // ============ QR IMAGE UPLOAD ============
+    // Drag and drop support
+    const uploadZone = document.getElementById('uploadZone');
+    if (uploadZone) {
+        uploadZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) scanQrFromFile(file);
+        });
+    }
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (file) scanQrFromFile(file);
+        event.target.value = ''; // Reset so same file can be re-uploaded
+    }
+
+    function scanQrFromFile(file) {
+        try {
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file (PNG, JPG, JPEG).');
+                return;
+            }
+
+            showProcessing(true);
+            console.log('Reading file:', file.name, file.type, file.size, 'bytes');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    console.log('File read complete, loading image...');
+                    const img = new Image();
+                    img.onload = function() {
+                        try {
+                            console.log('Image loaded:', img.width, 'x', img.height);
+                            // Draw the image onto a temporary canvas
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+
+                            // Read QR using jsQR
+                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            console.log('Running jsQR on', imageData.width, 'x', imageData.height, 'pixels...');
+                            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                                inversionAttempts: 'attemptBoth'
+                            });
+
+                            showProcessing(false);
+
+                            if (code && code.data) {
+                                console.log('QR decoded from image:', code.data);
+                                processQrData(code.data);
+                            } else {
+                                console.log('jsQR returned null - no QR found in image');
+                                alert('Could not read QR code from this image.\nMake sure the QR code is clear, fully visible, and not too small.');
+                            }
+                        } catch (err) {
+                            showProcessing(false);
+                            console.error('Canvas/jsQR error:', err);
+                            alert('Error processing image: ' + err.message);
+                        }
+                    };
+                    img.onerror = function() {
+                        showProcessing(false);
+                        console.error('Image load failed');
+                        alert('Failed to load the image file.');
+                    };
+                    img.src = e.target.result;
+                } catch (err) {
+                    showProcessing(false);
+                    console.error('Image creation error:', err);
+                    alert('Error: ' + err.message);
+                }
+            };
+            reader.onerror = function() {
+                showProcessing(false);
+                console.error('FileReader error');
+                alert('Failed to read the file.');
+            };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            showProcessing(false);
+            console.error('scanQrFromFile error:', err);
+            alert('Error: ' + err.message);
+        }
+    }
+
+    // ============ MANUAL ENTRY ============
+    function submitManualQr() {
+        const input = document.getElementById('manualQrInput');
+        const data = input.value.trim();
+        if (!data) {
+            alert('Please paste QR data first.');
+            return;
+        }
+        processQrData(data);
+        input.value = '';
+    }
+
+    // ============ PROCESS QR DATA ============
+    async function processQrData(qrData) {
+        showProcessing(true);
+        try {
+            const resp = await fetch('/watchman/scan-qr', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN
+                },
+                body: JSON.stringify({ qr_data: qrData })
+            });
+            const result = await resp.json();
+            showResult(result);
+            refreshStats();
+            loadRecentScans();
+        } catch (err) {
+            console.error('Scan error:', err);
+            showResult({ success: false, message: 'Network error. Please try again.' });
+        } finally {
+            showProcessing(false);
+        }
+    }
+
+    // ============ UI HELPERS ============
+    function showResult(result) {
+        const card = document.getElementById('resultCard');
+        const icon = document.getElementById('resultIcon');
+        const action = document.getElementById('resultAction');
+        const message = document.getElementById('resultMessage');
+        const details = document.getElementById('resultDetails');
+
+        card.className = 'result-card show';
+
+        if (result.success && result.action === 'checkin') {
+            card.classList.add('result-card-checkin');
+            icon.innerHTML = '<i class="fas fa-check-circle" style="color:#059669;"></i>';
+            action.textContent = '✅ CHECK-IN';
+            message.textContent = result.message;
+            details.innerHTML = result.slot_number
+                ? `<i class="fas fa-parking"></i> Assigned to slot <strong>${result.slot_number}</strong>`
+                : '';
+        } else if (result.success && result.action === 'checkout') {
+            card.classList.add('result-card-checkout');
+            icon.innerHTML = '<i class="fas fa-sign-out-alt" style="color:#2563eb;"></i>';
+            action.textContent = '🔵 CHECK-OUT';
+            message.textContent = result.message;
+            details.innerHTML = '';
+            if (result.duration) details.innerHTML += `<div><i class="fas fa-clock"></i> Duration: <strong>${result.duration}</strong></div>`;
+            if (result.fee !== undefined) details.innerHTML += `<div><i class="fas fa-rupee-sign"></i> Fee: <strong>₹${result.fee}</strong></div>`;
+        } else {
+            card.classList.add('result-card-error');
+            icon.innerHTML = '<i class="fas fa-times-circle" style="color:#dc2626;"></i>';
+            action.textContent = '❌ ERROR';
+            message.textContent = result.message || 'An unknown error occurred.';
+            details.innerHTML = '';
+        }
+
+        // Auto-hide after 8 seconds
+        setTimeout(() => { hideResult(); }, 8000);
+    }
+
+    function hideResult() {
+        const card = document.getElementById('resultCard');
+        card.className = 'result-card';
+    }
+
+    let processingTimeout = null;
+    function showProcessing(show) {
+        const overlay = document.getElementById('processingOverlay');
+        overlay.classList.toggle('show', show);
+        // Safety: auto-hide after 15 seconds no matter what
+        if (show) {
+            if (processingTimeout) clearTimeout(processingTimeout);
+            processingTimeout = setTimeout(() => {
+                overlay.classList.remove('show');
+                console.warn('Processing timeout - auto-hidden after 15s');
+            }, 15000);
+        } else {
+            if (processingTimeout) { clearTimeout(processingTimeout); processingTimeout = null; }
+        }
+    }
+
+    async function refreshStats() {
+        try {
+            const resp = await fetch('/api/slot-status/{{ lot._id }}');
+            const data = await resp.json();
+            document.getElementById('statTotal').textContent = data.total;
+            document.getElementById('statOccupied').textContent = data.occupied;
+            document.getElementById('statAvailable').textContent = data.available;
+        } catch (err) {
+            console.error('Stats refresh error:', err);
+        }
+    }
+
+    async function loadRecentScans() {
+        try {
+            const resp = await fetch('/watchman/recent-scans');
+            const logs = await resp.json();
+            const container = document.getElementById('logsContainer');
+
+            if (!logs.length) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox" style="font-size:2rem; opacity:0.3;"></i>
+                        <p class="mt-2 mb-0">No scans yet. Start scanning QR codes!</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = logs.map(log => {
+                let iconClass = 'error';
+                let iconHtml = '<i class="fas fa-exclamation"></i>';
+                if (log.action === 'checkin') { iconClass = 'checkin'; iconHtml = '<i class="fas fa-arrow-right"></i>'; }
+                else if (log.action === 'checkout') { iconClass = 'checkout'; iconHtml = '<i class="fas fa-arrow-left"></i>'; }
+                else if (log.action.includes('denied')) { iconClass = 'denied'; iconHtml = '<i class="fas fa-ban"></i>'; }
+
+                const vehiclePart = log.vehicle_number
+                    ? `<i class="fas fa-car me-1"></i>${log.vehicle_number} · `
+                    : '';
+
+                return `
+                    <div class="log-entry">
+                        <div class="log-action-icon ${iconClass}">${iconHtml}</div>
+                        <div class="log-details">
+                            <div class="log-msg">${escapeHtml(log.result_message)}</div>
+                            <div class="log-meta">${vehiclePart}<i class="fas fa-clock me-1"></i>${log.timestamp}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+        } catch (err) {
+            console.error('Load scans error:', err);
+        }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+
+    // Allow Enter key in manual input
+    document.getElementById('manualQrInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') submitManualQr();
+    });
+
+    // Auto-start camera scanner on page load (safe, non-blocking)
+    setTimeout(() => {
+        try { startCameraScanner(); } catch(e) { console.error('Camera auto-start failed:', e); }
+    }, 500);
+</script>
+{% endblock %}
