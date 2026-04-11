@@ -29,6 +29,14 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from zoneinfo import ZoneInfo
 IST = ZoneInfo('Asia/Kolkata')
 
+def now_ist():
+    """Return current IST time as a naive datetime.
+    
+    PyMongo auto-converts timezone-aware datetimes to UTC before storing.
+    By stripping tzinfo, the literal IST value is stored as-is in MongoDB.
+    """
+    return datetime.now(IST).replace(tzinfo=None)
+
 # Load environment variables
 load_dotenv()
 
@@ -202,7 +210,7 @@ def allowed_file(filename):
 
 def is_vehicle_subscribed(vehicle_id, lot_id):
     """Return True if an active subscription exists for this vehicle at this lot today."""
-    today = datetime.now(IST)
+    today = now_ist()
     sub = user_subscriptions_collection.find_one({
         'vehicle_id': ObjectId(vehicle_id),
         'lot_id': ObjectId(lot_id),
@@ -218,7 +226,7 @@ def calculate_parking_fee(entry_time, exit_time, price_per_hour):
     return round(hours * price_per_hour, 2)
 
 def generate_invoice_number():
-    timestamp = datetime.now(IST).strftime('%Y%m%d%H%M%S')
+    timestamp = now_ist().strftime('%Y%m%d%H%M%S')
     random_suffix = secrets.token_hex(3).upper()
     return f'INV-{timestamp}-{random_suffix}'
 
@@ -238,7 +246,7 @@ def deduct_from_wallet(user_id, amount, reason, reference_id):
             'reason': reason,
             'reference_id': reference_id,
             'balance_after': round(result['wallet_balance'] - amount, 2),
-            'created_at': datetime.now(IST)
+            'created_at': now_ist()
         })
         return True
     except Exception as e:
@@ -262,7 +270,7 @@ def credit_wallet(user_id, amount, reason, reference_id):
             'reason': reason,
             'reference_id': reference_id,
             'balance_after': round(result['wallet_balance'], 2),
-            'created_at': datetime.now(IST)
+            'created_at': now_ist()
         })
         return True
     except Exception as e:
@@ -291,7 +299,7 @@ def register():
                 'role': form.role.data,
                 'verified': True if form.role.data == 'user' else False,
                 'wallet_balance': 0.0,
-                'created_at': datetime.now(IST),
+                'created_at': now_ist(),
                 'profile_image': None
             }
             
@@ -303,7 +311,7 @@ def register():
                     'status': 'pending',
                     'verified_by': None,
                     'verified_at': None,
-                    'created_at': datetime.now(IST)
+                    'created_at': now_ist()
                 })
                 flash('Admin registration successful. Awaiting super admin verification.', 'info')
             else:
@@ -394,7 +402,7 @@ def regenerate_vehicle_qr(vehicle_id):
             {'$set': {
                 'qr_token': new_token,
                 'qr_code_base64': qr_base64,
-                'qr_generated_at': datetime.now(IST)
+                'qr_generated_at': now_ist()
             }}
         )
 
@@ -511,7 +519,7 @@ def my_vehicles():
                 'vehicle_type': form.vehicle_type.data,
                 'qr_token': qr_token,
                 'currently_parked': False,
-                'created_at': datetime.now(IST)
+                'created_at': now_ist()
             }
             result = vehicles_collection.insert_one(vehicle_data)
             
@@ -541,7 +549,7 @@ def my_vehicles():
                 {'_id': result.inserted_id},
                 {'$set': {
                     'qr_code_base64': qr_base64,
-                    'qr_generated_at': datetime.now(IST)
+                    'qr_generated_at': now_ist()
                 }}
             )
             
@@ -643,7 +651,7 @@ def my_bookings():
                          bookings=bookings,
                          page=page,
                          total_pages=total_pages,
-                         now=datetime.now(IST))
+                         now=now_ist())
 
 
 @app.route('/user/invoices')
@@ -713,7 +721,7 @@ def user_profile():
 @role_required('user')
 def user_subscriptions():
     user_id = ObjectId(current_user.id)
-    now = datetime.now(IST)
+    now = now_ist()
 
     # Get user's vehicles to find relevant vehicle types
     user_vehicles = list(vehicles_collection.find({'user_id': user_id}))
@@ -786,7 +794,7 @@ def buy_subscription(plan_id):
             'vehicle_id': vehicle['_id'],
             'lot_id': plan['lot_id'],
             'status': 'active',
-            'end_date': {'$gte': datetime.now(IST)}
+            'end_date': {'$gte': now_ist()}
         })
         if existing:
             flash('This vehicle already has an active subscription at this lot.', 'warning')
@@ -800,7 +808,7 @@ def buy_subscription(plan_id):
             return redirect(url_for('user_subscriptions'))
 
         # Create subscription record
-        start_date = datetime.now(IST)
+        start_date = now_ist()
         end_date = start_date + timedelta(days=plan['duration_days'])
         sub_data = {
             'user_id': ObjectId(current_user.id),
@@ -811,7 +819,7 @@ def buy_subscription(plan_id):
             'end_date': end_date,
             'price_paid': plan['price'],
             'status': 'active',
-            'created_at': datetime.now(IST)
+            'created_at': now_ist()
         }
         sub_id = user_subscriptions_collection.insert_one(sub_data).inserted_id
 
@@ -1017,7 +1025,7 @@ def prebook_slot(lot_id):
             start_time = datetime.fromisoformat(form.start_time.data)
             end_time = datetime.fromisoformat(form.end_time.data)
             
-            if start_time <= datetime.now(IST):
+            if start_time <= now_ist():
                 flash('Start time must be in the future.', 'danger')
                 return redirect(url_for('prebook_slot', lot_id=lot_id))
             
@@ -1081,7 +1089,7 @@ def prebook_slot(lot_id):
                 'booked_end': end_time,
                 'hold_amount': estimated_fee,
                 'checked_in_lot_id': ObjectId(lot_id),
-                'created_at': datetime.now(IST)
+                'created_at': now_ist()
             }
             booking_id = bookings_collection.insert_one(booking_data).inserted_id
             
@@ -1144,7 +1152,7 @@ def cancel_booking(booking_id):
         
         hold_amount = booking.get('hold_amount', 0)
         booked_start = booking['booked_start']
-        time_until_start = (booked_start - datetime.now(IST)).total_seconds() / 3600
+        time_until_start = (booked_start - now_ist()).total_seconds() / 3600
         
         if time_until_start > 2:
             # More than 2 hours before start: full refund
@@ -1161,7 +1169,7 @@ def cancel_booking(booking_id):
         
         bookings_collection.update_one(
             {'_id': booking['_id']},
-            {'$set': {'status': 'cancelled', 'cancelled_at': datetime.now(IST)}}
+            {'$set': {'status': 'cancelled', 'cancelled_at': now_ist()}}
         )
         
         # Remove scheduled no-show job
@@ -1242,7 +1250,7 @@ def manage_slots():
                     'pincode': lot_form.pincode.data.strip(),
                     'walkin_ratio': walkin_pct,
                     'prebook_ratio': prebook_pct,
-                    'created_at': datetime.now(IST)
+                    'created_at': now_ist()
                 }
                 lot_id = parking_lots_collection.insert_one(lot_data).inserted_id
                 
@@ -1271,7 +1279,7 @@ def manage_slots():
                         'mode': 'walkin',
                         'price_per_hour': two_wheeler_price,
                         'status': 'available',
-                        'created_at': datetime.now(IST)
+                        'created_at': now_ist()
                     })
                 # Create 2-wheeler prebook slots
                 for i in range(tw_walkin + 1, two_wheeler_count + 1):
@@ -1282,7 +1290,7 @@ def manage_slots():
                         'mode': 'prebook',
                         'price_per_hour': two_wheeler_price,
                         'status': 'available',
-                        'created_at': datetime.now(IST)
+                        'created_at': now_ist()
                     })
                 
                 # Create 4-wheeler walk-in slots
@@ -1294,7 +1302,7 @@ def manage_slots():
                         'mode': 'walkin',
                         'price_per_hour': four_wheeler_price,
                         'status': 'available',
-                        'created_at': datetime.now(IST)
+                        'created_at': now_ist()
                     })
                 # Create 4-wheeler prebook slots
                 for i in range(fw_walkin + 1, four_wheeler_count + 1):
@@ -1305,7 +1313,7 @@ def manage_slots():
                         'mode': 'prebook',
                         'price_per_hour': four_wheeler_price,
                         'status': 'available',
-                        'created_at': datetime.now(IST)
+                        'created_at': now_ist()
                     })
                 
                 if slots_to_create:
@@ -1325,7 +1333,7 @@ def manage_slots():
                     'role': 'watchman',
                     'verified': True,
                     'lot_id': lot_id,
-                    'created_at': datetime.now(IST),
+                    'created_at': now_ist(),
                     'profile_image': None
                 }
                 watchman_id = users_collection.insert_one(watchman_user).inserted_id
@@ -1385,7 +1393,7 @@ def add_slot(lot_id):
             'mode': mode_val,
             'price_per_hour': float(request.form.get('price_per_hour', 0)),
             'status': 'available',
-            'created_at': datetime.now(IST)
+            'created_at': now_ist()
         }
         
         parking_slots_collection.insert_one(slot_data)
@@ -1685,7 +1693,7 @@ def admin_subscriptions():
                 'lot_id': ObjectId(lot_id),
                 'admin_id': admin_id,
                 'active': True,
-                'created_at': datetime.now(IST)
+                'created_at': now_ist()
             }
             subscription_plans_collection.insert_one(plan_data)
             flash(f'Subscription plan "{name}" created successfully!', 'success')
@@ -1778,7 +1786,7 @@ def verify_admin(admin_id):
             {'$set': {
                 'status': 'verified',
                 'verified_by': ObjectId(current_user.id),
-                'verified_at': datetime.now(IST)
+                'verified_at': now_ist()
             }}
         )
         
@@ -1821,7 +1829,7 @@ def disable_admin(admin_id):
             {'$set': {
                 'status': 'disabled',
                 'disabled_by': ObjectId(current_user.id),
-                'disabled_at': datetime.now(IST)
+                'disabled_at': now_ist()
             }}
         )
         
@@ -1925,7 +1933,7 @@ def platform_analytics():
     # Platform revenue last 30 days
     platform_revenue = []
     for i in range(29, -1, -1):
-        date = datetime.now(IST) - timedelta(days=i)
+        date = now_ist() - timedelta(days=i)
         start = date.replace(hour=0, minute=0, second=0, microsecond=0)
         end = start + timedelta(days=1)
         day_invoices = list(invoices_collection.find({'generated_at': {'$gte': start, '$lt': end}}))
@@ -1948,7 +1956,7 @@ def platform_analytics():
     # User growth last 6 months
     user_growth = []
     for i in range(5, -1, -1):
-        now = datetime.now(IST)
+        now = now_ist()
         month_start = (now.replace(day=1) - timedelta(days=i * 30)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         if month_start.month == 12:
             month_end = month_start.replace(year=month_start.year + 1, month=1)
@@ -1974,7 +1982,7 @@ def platform_analytics():
     }
 
     # Unpaid invoices older than 1 hour
-    one_hour_ago = datetime.now(IST) - timedelta(hours=1)
+    one_hour_ago = now_ist() - timedelta(hours=1)
     unpaid_raw = list(invoices_collection.find({
         'payment_status': {'$in': ['pending', 'unpaid']},
         'generated_at': {'$lt': one_hour_ago}
@@ -2015,7 +2023,7 @@ def admin_analytics():
     booking_ids_all = [b['_id'] for b in bookings_collection.find({'slot_id': {'$in': slot_ids}})]
     revenue_daily = []
     for i in range(29, -1, -1):
-        date = datetime.now(IST) - timedelta(days=i)
+        date = now_ist() - timedelta(days=i)
         start = date.replace(hour=0, minute=0, second=0, microsecond=0)
         end = start + timedelta(days=1)
         day_inv = list(invoices_collection.find({
@@ -2079,7 +2087,7 @@ def user_analytics():
     # Monthly spending last 6 months
     monthly_spending = []
     for i in range(5, -1, -1):
-        now = datetime.now(IST)
+        now = now_ist()
         month_start = (now.replace(day=1) - timedelta(days=i * 30)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         if month_start.month == 12:
             month_end = month_start.replace(year=month_start.year + 1, month=1)
@@ -2147,7 +2155,7 @@ def super_admin_delete_user(user_id):
             return redirect(url_for('all_users'))
         users_collection.update_one(
             {'_id': ObjectId(user_id)},
-            {'$set': {'is_deleted': True, 'deleted_at': datetime.now(IST), 'deleted_by': ObjectId(current_user.id)}}
+            {'$set': {'is_deleted': True, 'deleted_at': now_ist(), 'deleted_by': ObjectId(current_user.id)}}
         )
         logger.info(f'Super admin {current_user.email} soft-deleted user {user["email"]}')
         flash(f'User {user["name"]} ({user["email"]}) has been deactivated.', 'success')
@@ -2184,7 +2192,7 @@ def super_admin_delete_lot(lot_id):
                 )
             bookings_collection.update_one(
                 {'_id': booking['_id']},
-                {'$set': {'status': 'cancelled', 'cancelled_reason': 'lot_deleted', 'cancelled_at': datetime.now(IST)}}
+                {'$set': {'status': 'cancelled', 'cancelled_reason': 'lot_deleted', 'cancelled_at': now_ist()}}
             )
             # Free vehicle
             vehicles_collection.update_one(
@@ -2237,7 +2245,7 @@ def super_admin_force_checkout(booking_id):
                 return render_template('super_admin/force_checkout.html',
                                      booking=booking, slot=slot, vehicle=vehicle, user=user, lot=lot)
 
-            now = datetime.now(IST)
+            now = now_ist()
 
             # Complete the booking
             bookings_collection.update_one(
@@ -2460,7 +2468,7 @@ def watchman_scan_qr():
                 'vehicle_id': None,
                 'action': 'invalid_scan',
                 'result_message': 'Invalid or tampered QR code',
-                'timestamp': datetime.now(IST)
+                'timestamp': now_ist()
             })
             return jsonify({'success': False, 'message': 'Invalid or tampered QR code'})
         
@@ -2473,7 +2481,7 @@ def watchman_scan_qr():
                 'action': 'invalid_scan',
                 'alert': True,
                 'result_message': f'SECURITY ALERT: QR token mismatch for vehicle {vehicle_number}',
-                'timestamp': datetime.now(IST)
+                'timestamp': now_ist()
             })
             logger.warning(f'SECURITY ALERT: QR token mismatch for vehicle {vehicle_number} (ID: {vehicle_id})')
             return jsonify({'success': False, 'message': 'Invalid or tampered QR code'})
@@ -2501,7 +2509,7 @@ def watchman_scan_qr():
                     'vehicle_id': vehicle['_id'],
                     'action': 'checkout_denied',
                     'result_message': f'Vehicle checked in at {other_lot_name}',
-                    'timestamp': datetime.now(IST)
+                    'timestamp': now_ist()
                 })
                 return jsonify({
                     'success': False,
@@ -2509,7 +2517,7 @@ def watchman_scan_qr():
                 })
             
             # Same lot — proceed with checkout
-            exit_time = datetime.now(IST)
+            exit_time = now_ist()
             slot = parking_slots_collection.find_one({'_id': active_booking['slot_id']})
             
             duration_seconds = (exit_time - active_booking['entry_time']).total_seconds()
@@ -2541,7 +2549,7 @@ def watchman_scan_qr():
                     'invoice_number': generate_invoice_number(),
                     'amount': 0,
                     'payment_status': 'subscription',
-                    'generated_at': datetime.now(IST)
+                    'generated_at': now_ist()
                 })
                 
                 scan_logs_collection.insert_one({
@@ -2550,7 +2558,7 @@ def watchman_scan_qr():
                     'vehicle_id': vehicle['_id'],
                     'action': 'checkout',
                     'result_message': f'Checked out (subscription). Duration: {duration_str}, Fee: Rs.0',
-                    'timestamp': datetime.now(IST)
+                    'timestamp': now_ist()
                 })
                 
                 logger.info(f'Watchman checkout (subscription): Vehicle {vehicle_number}, Slot {slot["slot_number"]}')
@@ -2590,7 +2598,7 @@ def watchman_scan_qr():
                 'payment_status': 'pending',
                 'lot_id': watchman_lot_id,
                 'watchman_id': ObjectId(current_user.id),
-                'generated_at': datetime.now(IST)
+                'generated_at': now_ist()
             }
             invoice_id = invoices_collection.insert_one(invoice_data).inserted_id
             
@@ -2605,7 +2613,7 @@ def watchman_scan_qr():
                 'vehicle_id': vehicle['_id'],
                 'action': 'checkout',
                 'result_message': f'Checked out. Duration: {duration_str}, Fee: Rs.{fee} (payment pending)',
-                'timestamp': datetime.now(IST)
+                'timestamp': now_ist()
             })
             
             logger.info(f'Watchman checkout: Vehicle {vehicle_number}, Slot {slot["slot_number"]}, Fee: {fee} (pending)')
@@ -2624,7 +2632,7 @@ def watchman_scan_qr():
         
         else:
             # CHECK-IN LOGIC
-            now = datetime.now(IST)
+            now = now_ist()
 
             # --- Pre-book arrival handling ---
             # Look for a reserved booking for this vehicle at this lot
@@ -2895,7 +2903,7 @@ def watchman_pay_invoice(invoice_id):
                 })
             invoices_collection.update_one(
                 {'_id': invoice['_id']},
-                {'$set': {'payment_status': 'paid_wallet', 'paid_at': datetime.now(IST)}}
+                {'$set': {'payment_status': 'paid_wallet', 'paid_at': now_ist()}}
             )
             logger.info(f'Invoice {invoice_id} paid via wallet')
             return jsonify({'success': True, 'message': f'Rs.{amount} deducted from wallet successfully.', 'payment_status': 'paid_wallet'})
@@ -2904,7 +2912,7 @@ def watchman_pay_invoice(invoice_id):
             status_label = f'paid_{payment_method}'
             invoices_collection.update_one(
                 {'_id': invoice['_id']},
-                {'$set': {'payment_status': status_label, 'paid_at': datetime.now(IST)}}
+                {'$set': {'payment_status': status_label, 'paid_at': now_ist()}}
             )
             watchman_collections_collection.insert_one({
                 'watchman_id': ObjectId(current_user.id),
@@ -2913,7 +2921,7 @@ def watchman_pay_invoice(invoice_id):
                 'user_id': user_id,
                 'amount': amount,
                 'method': payment_method,
-                'collected_at': datetime.now(IST)
+                'collected_at': now_ist()
             })
             logger.info(f'Invoice {invoice_id} paid via {payment_method}, collected by watchman {current_user.email}')
             return jsonify({'success': True, 'message': f'Rs.{amount} collected via {payment_method}.', 'payment_status': status_label})
@@ -3044,7 +3052,7 @@ def create_super_admin():
             'role': 'super_admin',
             'verified': True,
             'wallet_balance': 0.0,
-            'created_at': datetime.now(IST),
+            'created_at': now_ist(),
             'profile_image': None
         })
         logger.info('Super admin created: superadmin@parking.com / superadmin123')
@@ -3082,7 +3090,7 @@ def handle_noshow(booking_id):
                 'status': 'noshow',
                 'noshow_fee': noshow_fee,
                 'refund_amount': refund_amount,
-                'noshow_at': datetime.now(IST)
+                'noshow_at': now_ist()
             }}
         )
         
@@ -3102,12 +3110,12 @@ def reschedule_noshow_jobs():
     try:
         reserved_bookings = list(bookings_collection.find({
             'status': 'reserved',
-            'booked_start': {'$gt': datetime.now(IST)}
+            'booked_start': {'$gt': now_ist()}
         }))
         count = 0
         for booking in reserved_bookings:
             noshow_time = booking['booked_start'] + timedelta(minutes=20)
-            if noshow_time > datetime.now(IST):
+            if noshow_time > now_ist():
                 scheduler.add_job(
                     func=handle_noshow,
                     trigger='date',
@@ -3161,7 +3169,7 @@ def inject_wallet_balance():
 @role_required('super_admin')
 def super_admin_unpaid_invoices():
     try:
-        one_hour_ago = datetime.now(IST) - timedelta(hours=1)
+        one_hour_ago = now_ist() - timedelta(hours=1)
         pending_raw = list(invoices_collection.find({
             'payment_status': {'$in': ['pending', 'unpaid']},
             'generated_at': {'$lt': one_hour_ago}
@@ -3174,7 +3182,7 @@ def super_admin_unpaid_invoices():
             lot = parking_lots_collection.find_one({'_id': slot['lot_id']}) if slot else None
             vehicle = vehicles_collection.find_one({'_id': booking['vehicle_id']}) if booking else None
             user = users_collection.find_one({'_id': inv['user_id']})
-            age_hours = round((datetime.now(IST) - inv['generated_at']).total_seconds() / 3600, 1)
+            age_hours = round((now_ist() - inv['generated_at']).total_seconds() / 3600, 1)
             invoices_enriched.append({
                 '_id': inv['_id'],
                 'invoice_number': inv.get('invoice_number', ''),
