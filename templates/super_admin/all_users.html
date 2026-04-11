@@ -24,24 +24,80 @@
     <div class="card-body">
         {% if users %}
             <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-striped align-middle">
                     <thead>
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
                             <th>Vehicles</th>
                             <th>Bookings</th>
+                            <th>Wallet</th>
                             <th>Joined</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for user in users %}
-                        <tr>
+                        <tr {% if user.get('is_deleted') %}class="table-secondary"{% endif %}>
                             <td>{{ user.name }}</td>
                             <td>{{ user.email }}</td>
                             <td><span class="badge bg-info">{{ user.vehicles_count }}</span></td>
                             <td><span class="badge bg-success">{{ user.bookings_count }}</span></td>
+                            <td>₹{{ "%.2f"|format(user.wallet_balance|default(0)) }}</td>
                             <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if user.get('is_deleted') %}
+                                    <span class="badge bg-danger">Deleted</span>
+                                {% else %}
+                                    <span class="badge bg-success">Active</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not user.get('is_deleted') %}
+                                <div class="d-flex gap-1">
+                                    <a href="{{ url_for('super_admin_wallet_adjust', user_id=user._id) }}" class="btn btn-sm btn-outline-primary" title="Wallet Adjust">
+                                        <i class="fas fa-wallet"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ loop.index }}" title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Delete User Modal -->
+                                <div class="modal fade" id="deleteUserModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirm Delete</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Are you sure you want to deactivate this user?</p>
+                                                <ul class="mb-0">
+                                                    <li><strong>Name:</strong> {{ user.name }}</li>
+                                                    <li><strong>Email:</strong> {{ user.email }}</li>
+                                                    <li><strong>Vehicles:</strong> {{ user.vehicles_count }}</li>
+                                                    <li><strong>Bookings:</strong> {{ user.bookings_count }}</li>
+                                                </ul>
+                                                <div class="alert alert-warning mt-3 mb-0">
+                                                    <small><i class="fas fa-info-circle"></i> The user will be soft-deleted and unable to log in. No data is permanently removed.</small>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <form method="POST" action="{{ url_for('super_admin_delete_user', user_id=user._id) }}" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Delete User</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted"><small>Deactivated</small></span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

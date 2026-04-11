@@ -62,7 +62,7 @@
                             <th>Email</th>
                             <th>Parking Lots</th>
                             <th>Status</th>
-                            <th>Action</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -73,11 +73,46 @@
                             <td><span class="badge bg-primary">{{ admin.lots_count }}</span></td>
                             <td><span class="badge bg-success">Active</span></td>
                             <td>
-                                <a href="{{ url_for('disable_admin', admin_id=admin._id) }}" 
-                                   class="btn btn-sm btn-warning"
-                                   onclick="return confirm('Disable this admin? They will not be able to access admin features until re-enabled.')">
-                                    <i class="fas fa-ban"></i> Disable
-                                </a>
+                                <div class="d-flex gap-1">
+                                    <a href="{{ url_for('disable_admin', admin_id=admin._id) }}" 
+                                       class="btn btn-sm btn-warning"
+                                       onclick="return confirm('Disable this admin? They will not be able to access admin features until re-enabled.')">
+                                        <i class="fas fa-ban"></i> Disable
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAdminModal{{ loop.index }}">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+
+                                <!-- Delete Admin Modal -->
+                                <div class="modal fade" id="deleteAdminModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Delete Admin</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Are you sure you want to deactivate this admin?</p>
+                                                <ul>
+                                                    <li><strong>Name:</strong> {{ admin.name }}</li>
+                                                    <li><strong>Email:</strong> {{ admin.email }}</li>
+                                                    <li><strong>Parking Lots:</strong> {{ admin.lots_count }}</li>
+                                                </ul>
+                                                <div class="alert alert-warning mb-0">
+                                                    <small><i class="fas fa-info-circle"></i> The admin will be soft-deleted and unable to log in. Their lots and data will remain.</small>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <form method="POST" action="{{ url_for('super_admin_delete_user', user_id=admin._id) }}" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Delete Admin</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -104,7 +139,7 @@
                         <th>Email</th>
                         <th>Parking Lots</th>
                         <th>Status</th>
-                        <th>Action</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -115,16 +150,41 @@
                         <td><span class="badge bg-primary">{{ admin.lots_count }}</span></td>
                         <td><span class="badge bg-danger">Disabled</span></td>
                         <td>
-                            <a href="{{ url_for('verify_admin', admin_id=admin._id) }}" 
-                               class="btn btn-sm btn-success"
-                               onclick="return confirm('Re-enable this admin?')">
-                                <i class="fas fa-check"></i> Enable
-                            </a>
-                            <a href="{{ url_for('reject_admin', admin_id=admin._id) }}" 
-                               class="btn btn-sm btn-danger"
-                               onclick="return confirm('Permanently delete this admin account? This cannot be undone.')">
-                                <i class="fas fa-trash"></i> Delete
-                            </a>
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('verify_admin', admin_id=admin._id) }}" 
+                                   class="btn btn-sm btn-success"
+                                   onclick="return confirm('Re-enable this admin?')">
+                                    <i class="fas fa-check"></i> Enable
+                                </a>
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteDisabledAdminModal{{ loop.index }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+
+                            <!-- Delete Disabled Admin Modal -->
+                            <div class="modal fade" id="deleteDisabledAdminModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Delete Admin</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Permanently deactivate <strong>{{ admin.name }}</strong> ({{ admin.email }})?</p>
+                                            <div class="alert alert-warning mb-0">
+                                                <small><i class="fas fa-info-circle"></i> The admin will be soft-deleted and unable to log in.</small>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <form method="POST" action="{{ url_for('super_admin_delete_user', user_id=admin._id) }}" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Delete</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

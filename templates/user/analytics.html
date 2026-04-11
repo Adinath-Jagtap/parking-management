@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}My Analytics - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-chart-line"></i> My Analytics</h2>
+
+<!-- Stats Cards -->
+<div class="row mb-4 g-3">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                    <i class="fas fa-rupee-sign fa-lg text-primary"></i>
+                </div>
+                <h6 class="text-muted text-uppercase small fw-semibold">Total Spent</h6>
+                <h3 class="fw-bold text-primary mb-0">₹{{ "%.2f"|format(total_spent) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                    <i class="fas fa-clock fa-lg text-success"></i>
+                </div>
+                <h6 class="text-muted text-uppercase small fw-semibold">Avg. Duration</h6>
+                <h3 class="fw-bold text-success mb-0">{{ avg_duration_minutes }} <small class="fs-6 fw-normal">min</small></h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="rounded-circle bg-info bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                    <i class="fas fa-map-marker-alt fa-lg text-info"></i>
+                </div>
+                <h6 class="text-muted text-uppercase small fw-semibold">Most Visited Lot</h6>
+                <h3 class="fw-bold text-info mb-1">{{ most_visited_lot.name }}</h3>
+                <span class="badge bg-info bg-opacity-25 text-info">{{ most_visited_lot.count }} visits</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4 g-3">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0"><i class="fas fa-chart-bar text-primary me-2"></i>Monthly Spending (Last 6 Months)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlySpendingChart" height="260"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0"><i class="fas fa-chart-pie text-success me-2"></i>Booking Types</h5>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="bookingTypeChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="application/json" id="data-spending">{{ monthly_spending | tojson }}</script>
+<script type="application/json" id="data-booking-type">{{ booking_type_breakdown | tojson }}</script>
+<script>
+    // Monthly Spending – Bar chart
+    const spendData = JSON.parse(document.getElementById('data-spending').textContent);
+    new Chart(document.getElementById('monthlySpendingChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: spendData.map(d => d.month),
+            datasets: [{
+                label: 'Spending (₹)',
+                data: spendData.map(d => d.amount),
+                backgroundColor: 'rgba(13, 110, 253, 0.65)',
+                borderColor: 'rgb(13, 110, 253)',
+                borderWidth: 1,
+                borderRadius: 6,
+                hoverBackgroundColor: 'rgba(13, 110, 253, 0.85)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => '₹' + ctx.parsed.y.toFixed(2)
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: v => '₹' + v }
+                }
+            }
+        }
+    });
+
+    // Booking Type – Pie chart
+    const btData = JSON.parse(document.getElementById('data-booking-type').textContent);
+    new Chart(document.getElementById('bookingTypeChart').getContext('2d'), {
+        type: 'pie',
+        data: {
+            labels: ['Walk-in', 'Pre-booked', 'Subscription'],
+            datasets: [{
+                data: [btData.walkin, btData.prebooked, btData.subscription],
+                backgroundColor: ['#0d6efd', '#198754', '#0dcaf0'],
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -27,15 +27,6 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Language</label>
-                        <select name="language" class="form-select">
-                            {% for code, name in languages.items() %}
-                                <option value="{{ code }}" {% if user.language == code %}selected{% endif %}>{{ name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
                         <label class="form-label">Profile Image</label>
                         <input type="file" name="profile_image" class="form-control" accept="image/*">
                         <small class="text-muted">Max 5MB. Allowed: jpg, jpeg, png, gif</small>

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Unpaid Invoices - Super Admin{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-file-invoice-dollar"></i> Unpaid Invoices</h2>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        {% if unpaid_invoices %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:30px;"></th>
+                        <th>Invoice #</th>
+                        <th>User</th>
+                        <th>Lot</th>
+                        <th class="text-end">Amount</th>
+                        <th>Created</th>
+                        <th>Age</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in unpaid_invoices %}
+                    <tr data-generated="{{ inv.generated_at }}" {% if inv.hours_old is defined and inv.hours_old >= 24 %}class="table-warning"{% endif %}>
+                        <td class="flag-cell">
+                            {% if inv.hours_old is defined and inv.hours_old >= 24 %}
+                                <i class="fas fa-flag text-danger" title="Overdue > 24 hours"></i>
+                            {% else %}
+                                <i class="fas fa-clock text-warning" title="Pending"></i>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ inv.invoice_number }}</strong></td>
+                        <td>
+                            {{ inv.user_name }}<br>
+                            <small class="text-muted">{{ inv.user_email }}</small>
+                        </td>
+                        <td>{{ inv.lot_name }}</td>
+                        <td class="text-end fw-bold">₹{{ "%.2f"|format(inv.amount) }}</td>
+                        <td><small>{{ inv.generated_at }}</small></td>
+                        <td class="age-cell fw-semibold"></td>
+                        <td>
+                            {% if inv.booking_id %}
+                            <a href="{{ url_for('super_admin_force_checkout', booking_id=inv.booking_id) }}" class="btn btn-sm btn-warning" title="Force Clear">
+                                <i class="fas fa-sign-out-alt"></i> Force Clear
+                            </a>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+            <p class="text-muted mb-0">No unpaid invoices. All clear! 🎉</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Calculate age for each row client-side
+    document.querySelectorAll('tr[data-generated]').forEach(function(row) {
+        var genStr = row.dataset.generated;
+        if (!genStr) return;
+        var genDate = new Date(genStr.replace(' ', 'T'));
+        var now = new Date();
+        var diffMs = now - genDate;
+        var diffHours = Math.floor(diffMs / 3600000);
+        var diffDays = Math.floor(diffHours / 24);
+        var remHours = diffHours % 24;
+
+        var ageCell = row.querySelector('.age-cell');
+        if (!ageCell) return;
+
+        var ageText = '';
+        if (diffDays > 0) ageText = diffDays + 'd ' + remHours + 'h';
+        else ageText = diffHours + 'h';
+        ageCell.textContent = ageText;
+
+        if (diffHours >= 24) {
+            ageCell.classList.add('text-danger');
+        } else {
+            ageCell.classList.add('text-warning');
+        }
+    });
+</script>
+{% endblock %}

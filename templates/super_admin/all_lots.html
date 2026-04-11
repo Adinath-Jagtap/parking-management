@@ -9,7 +9,7 @@
     <div class="card-body">
         {% if lots %}
             <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-striped align-middle">
                     <thead>
                         <tr>
                             <th>Lot Name</th>
@@ -19,6 +19,7 @@
                             <th>Total Slots</th>
                             <th>Occupied</th>
                             <th>Availability</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -44,6 +45,48 @@
                                             No Slots
                                         </div>
                                     {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteLotModal{{ loop.index }}" title="Delete Lot">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+
+                                <!-- Delete Lot Modal -->
+                                <div class="modal fade" id="deleteLotModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Delete Parking Lot</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="fw-bold">Are you sure you want to delete this parking lot?</p>
+                                                <div class="alert alert-danger">
+                                                    <i class="fas fa-exclamation-circle"></i> <strong>This action will:</strong>
+                                                    <ul class="mb-0 mt-1">
+                                                        <li>Delete the lot "<strong>{{ lot.name }}</strong>"</li>
+                                                        <li>Delete all <strong>{{ lot.total_slots }}</strong> parking slots</li>
+                                                        <li>Cancel all active/reserved bookings with wallet refunds</li>
+                                                        <li>Disable any assigned watchmen</li>
+                                                    </ul>
+                                                </div>
+                                                <table class="table table-sm mb-0">
+                                                    <tr><td class="fw-bold">Name:</td><td>{{ lot.name }}</td></tr>
+                                                    <tr><td class="fw-bold">Address:</td><td>{{ lot.address }}</td></tr>
+                                                    <tr><td class="fw-bold">Admin:</td><td>{{ lot.admin.name }}</td></tr>
+                                                    <tr><td class="fw-bold">Currently Occupied:</td><td>{{ lot.occupied_slots }} / {{ lot.total_slots }}</td></tr>
+                                                </table>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <form method="POST" action="{{ url_for('super_admin_delete_lot', lot_id=lot._id) }}" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Delete Permanently</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </td>
                         </tr>

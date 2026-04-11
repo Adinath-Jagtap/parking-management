@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Subscription Plans - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-id-card"></i> Subscription Plans</h2>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-plus"></i> Create New Subscription Plan</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin_subscriptions') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="create">
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="name" class="form-label">Plan Name</label>
+                            <input type="text" name="name" id="name" class="form-control" placeholder="e.g. Monthly Pass" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="duration_days" class="form-label">Duration (days)</label>
+                            <input type="number" name="duration_days" id="duration_days" class="form-control" min="1" max="365" value="30" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="price" class="form-label">Price (₹)</label>
+                            <input type="number" step="0.01" name="price" id="price" class="form-control" min="1" placeholder="e.g. 500" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="vehicle_type" class="form-label">Vehicle Type</label>
+                            <select name="vehicle_type" id="vehicle_type" class="form-select" required>
+                                <option value="2-wheeler">2-Wheeler</option>
+                                <option value="4-wheeler">4-Wheeler</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="lot_id" class="form-label">Parking Lot</label>
+                            <select name="lot_id" id="lot_id" class="form-select" required>
+                                {% for lot in lots %}
+                                <option value="{{ lot._id }}">{{ lot.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-plus"></i> Create Plan
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Existing Plans -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-list"></i> Your Subscription Plans</h5>
+        {% if plans %}
+        <span class="badge bg-secondary">{{ plans|length }} plan{{ 's' if plans|length > 1 }}</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if plans %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Plan Name</th>
+                        <th>Lot</th>
+                        <th>Vehicle Type</th>
+                        <th>Duration</th>
+                        <th>Price</th>
+                        <th>Subscribers</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in plans %}
+                    <tr>
+                        <td><strong>{{ plan.name }}</strong></td>
+                        <td>{{ plan.lot.name if plan.lot else 'N/A' }}</td>
+                        <td><span class="badge bg-info">{{ plan.vehicle_type }}</span></td>
+                        <td>{{ plan.duration_days }} days</td>
+                        <td>₹{{ "%.2f"|format(plan.price) }}</td>
+                        <td><span class="badge bg-secondary">{{ plan.subscriber_count }}</span></td>
+                        <td>
+                            {% if plan.active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin_subscriptions') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="action" value="toggle">
+                                <input type="hidden" name="plan_id" value="{{ plan._id }}">
+                                <button type="submit" class="btn btn-sm {{ 'btn-warning' if plan.active else 'btn-success' }}">
+                                    {% if plan.active %}
+                                        <i class="fas fa-pause"></i> Deactivate
+                                    {% else %}
+                                        <i class="fas fa-play"></i> Activate
+                                    {% endif %}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-id-card fa-3x text-muted mb-3"></i>
+            <p class="text-muted mb-0">No subscription plans created yet. Create your first plan above!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if not lots %}
+<div class="alert alert-warning mt-3">
+    <i class="fas fa-exclamation-triangle"></i> You need to create a parking lot before you can create subscription plans.
+    <a href="{{ url_for('manage_slots') }}" class="alert-link">Create a lot</a>.
+</div>
+{% endif %}
+{% endblock %}

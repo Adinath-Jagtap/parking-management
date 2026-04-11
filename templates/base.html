@@ -22,22 +22,33 @@
                         {% if current_user.role == 'user' %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('user_dashboard') }}">Dashboard</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('parking_lots') }}">Parking Lots</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('my_vehicles') }}">My Vehicles</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_pre_book') }}">Pre-book</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('my_bookings') }}">My Bookings</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_subscriptions') }}">Subscriptions</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_wallet') }}"><i class="fas fa-wallet"></i> Wallet <span class="badge bg-success ms-1">₹{{ "%.2f"|format(wallet_balance|default(0.0)) }}</span></a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('my_vehicles') }}">My Vehicles</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('invoices') }}">Invoices</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_analytics') }}"><i class="fas fa-chart-line"></i> Analytics</a></li>
                         {% elif current_user.role == 'admin' %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_slots') }}">Manage Slots</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_subscriptions') }}">Subscriptions</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('lot_users') }}">Lot Users</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_watchman_audit') }}">Watchman Audit</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_invoices') }}">Invoices</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_analytics') }}"><i class="fas fa-chart-line"></i> Analytics</a></li>
                         {% elif current_user.role == 'super_admin' %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('super_admin_dashboard') }}">Dashboard</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_admins') }}">Manage Admins</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('all_users') }}">All Users</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('all_lots') }}">All Lots</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('super_admin_wallet_adjust') }}">Wallet Adjust</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('super_admin_unpaid_invoices') }}">Unpaid Invoices</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('super_admin_watchman_collections') }}">Watchman Collections</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('platform_analytics') }}">Analytics</a></li>
                         {% elif current_user.role == 'watchman' %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('watchman_dashboard') }}">Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('watchman_collections_page') }}"><i class="fas fa-hand-holding-usd me-1"></i>Collections Log</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                         {% endif %}
                         {% if current_user.role != 'watchman' %}

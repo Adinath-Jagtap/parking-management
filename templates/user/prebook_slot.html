@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Pre-book Slot - {{ lot.name }} - Parking Management{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-calendar-check"></i> Pre-book Parking Slot</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-building"></i> {{ lot.name }}</h5>
+            </div>
+            <div class="card-body">
+                <p><i class="fas fa-map-marker-alt"></i> <strong>Address:</strong> {{ lot.address }}</p>
+                <p><i class="fas fa-mail-bulk"></i> <strong>Pincode:</strong> {{ lot.pincode }}</p>
+                <hr>
+                <h6>Pre-book Slots Available:</h6>
+                <div class="row text-center mt-3">
+                    <div class="col-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 class="text-success">{{ prebook_2w }}</h3>
+                                <small>2-Wheeler Slots</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 class="text-success">{{ prebook_4w }}</h3>
+                                <small>4-Wheeler Slots</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wallet Balance Card -->
+        <div class="card mb-3" id="wallet-card">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0"><i class="fas fa-wallet"></i> Wallet Balance</h6>
+                </div>
+                <h5 class="mb-0" id="wallet-display">₹{{ "%.2f"|format(wallet_balance) }}</h5>
+            </div>
+        </div>
+
+        <!-- Info Card -->
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6><i class="fas fa-info-circle"></i> Pre-booking Policy</h6>
+                <ul class="small mb-0">
+                    <li>Full estimated fee is held from your wallet at booking time</li>
+                    <li>Check in within <strong>20 minutes</strong> of your start time</li>
+                    <li><strong>No-show:</strong> 20-minute fee charged, remaining amount refunded</li>
+                    <li><strong>Cancel &gt;2 hours</strong> before start: full refund</li>
+                    <li><strong>Cancel &lt;2 hours</strong> before start: no refund</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-plus"></i> Reserve Your Slot</h5>
+            </div>
+            <div class="card-body">
+                {% if prebook_2w > 0 or prebook_4w > 0 %}
+                    <form method="POST" action="{{ url_for('prebook_slot', lot_id=lot._id) }}" id="prebook-form">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            {{ form.vehicle_id.label(class="form-label") }}
+                            {{ form.vehicle_id(class="form-select", id="vehicle_id") }}
+                            <small class="form-text text-muted">A prebook slot matching your vehicle type will be assigned</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="start_time" class="form-label">Start Date &amp; Time</label>
+                            <input type="datetime-local" name="start_time" id="start_time"
+                                   class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="end_time" class="form-label">End Date &amp; Time</label>
+                            <input type="datetime-local" name="end_time" id="end_time"
+                                   class="form-control" required>
+                        </div>
+
+                        <!-- Fee Estimate -->
+                        <div id="fee-estimate" class="alert alert-info d-none">
+                            <i class="fas fa-calculator"></i>
+                            Estimated fee: <strong id="fee-amount">₹0.00</strong>
+                            <br>
+                            <small><span id="fee-hours">0</span> hours &times; ₹<span id="fee-rate">0</span>/hr</small>
+                        </div>
+
+                        <!-- Insufficient Balance Warning -->
+                        <div id="balance-warning" class="alert alert-danger d-none">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Insufficient wallet balance!</strong>
+                            <span id="balance-shortfall"></span>
+                            <br>
+                            <a href="{{ url_for('user_wallet') }}" class="btn btn-sm btn-outline-danger mt-2">
+                                <i class="fas fa-plus"></i> Top up Wallet
+                            </a>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100" id="submit-btn">
+                            <i class="fas fa-lock"></i> Confirm Pre-booking
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        No pre-book slots configured at this parking lot.
+                    </div>
+                    <a href="{{ url_for('parking_lots') }}" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Find Other Parking Lots
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('parking_lots') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Parking Lots
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var walletBalance = {{ wallet_balance }};
+    var lotId = '{{ lot._id }}';
+
+    // Set minimum datetime to now
+    var now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    var minDatetime = now.toISOString().slice(0, 16);
+    document.getElementById('start_time').setAttribute('min', minDatetime);
+    document.getElementById('end_time').setAttribute('min', minDatetime);
+
+    var startInput = document.getElementById('start_time');
+    var endInput = document.getElementById('end_time');
+    var vehicleSelect = document.getElementById('vehicle_id');
+
+    function getVehicleType() {
+        var text = vehicleSelect.options[vehicleSelect.selectedIndex].text;
+        return text.indexOf('4-Wheeler') !== -1 ? '4-wheeler' : '2-wheeler';
+    }
+
+    function estimateFee() {
+        var startVal = startInput.value;
+        var endVal = endInput.value;
+        var feeBox = document.getElementById('fee-estimate');
+        var warnBox = document.getElementById('balance-warning');
+        var submitBtn = document.getElementById('submit-btn');
+
+        if (!startVal || !endVal) {
+            feeBox.classList.add('d-none');
+            warnBox.classList.add('d-none');
+            submitBtn.disabled = false;
+            return;
+        }
+
+        var vehicleType = getVehicleType();
+        var url = '/api/estimate-fee/' + lotId +
+                  '?start_time=' + encodeURIComponent(startVal) +
+                  '&end_time=' + encodeURIComponent(endVal) +
+                  '&vehicle_type=' + encodeURIComponent(vehicleType);
+
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    document.getElementById('fee-amount').textContent = '₹' + data.estimated_fee.toFixed(2);
+                    document.getElementById('fee-hours').textContent = data.hours;
+                    document.getElementById('fee-rate').textContent = data.price_per_hour;
+                    feeBox.classList.remove('d-none');
+
+                    // Check wallet balance
+                    if (walletBalance < data.estimated_fee) {
+                        var shortfall = (data.estimated_fee - walletBalance).toFixed(2);
+                        document.getElementById('balance-shortfall').textContent =
+                            'You need ₹' + shortfall + ' more. Current balance: ₹' + walletBalance.toFixed(2);
+                        warnBox.classList.remove('d-none');
+                        submitBtn.disabled = true;
+                    } else {
+                        warnBox.classList.add('d-none');
+                        submitBtn.disabled = false;
+                    }
+                } else {
+                    feeBox.classList.add('d-none');
+                }
+            })
+            .catch(function() {
+                feeBox.classList.add('d-none');
+            });
+    }
+
+    startInput.addEventListener('change', function() {
+        if (startInput.value && !endInput.value) {
+            var d = new Date(startInput.value);
+            d.setHours(d.getHours() + 2);
+            endInput.value = d.toISOString().slice(0, 16);
+        }
+        endInput.setAttribute('min', startInput.value);
+        estimateFee();
+    });
+
+    endInput.addEventListener('change', estimateFee);
+    vehicleSelect.addEventListener('change', estimateFee);
+</script>
+{% endblock %}

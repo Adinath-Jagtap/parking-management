@@ -1,6 +1,7 @@
 import os
 import logging
 from datetime import datetime, timedelta
+import math
 from functools import wraps
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file
@@ -12,8 +13,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_babel import Babel, gettext as _
-from pymongo import MongoClient, ASCENDING, DESCENDING
+from pymongo import MongoClient, ASCENDING, DESCENDING, ReturnDocument
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
 import secrets
@@ -22,6 +22,10 @@ from io import BytesIO
 import json
 import qrcode
 import re
+import hmac
+import hashlib
+import razorpay
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # Load environment variables
 load_dotenv()
@@ -32,9 +36,8 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(32))
 app.config['MONGO_URI'] = os.getenv('MONGO_URI', 'mongodb://localhost:27017/parking_management')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB max file size
-app.config['BABEL_DEFAULT_LOCALE'] = 'en'
-app.config['BABEL_TRANSLATION_DIRECTORIES'] = 'translations'
-app.config['LANGUAGES'] = {'en': 'English', 'hi': 'Hindi', 'es': 'Spanish'}
+app.config['RAZORPAY_KEY_ID'] = os.getenv('RAZORPAY_KEY_ID', '')
+app.config['RAZORPAY_KEY_SECRET'] = os.getenv('RAZORPAY_KEY_SECRET', '')
 
 # Security headers
 @app.after_request
@@ -42,7 +45,7 @@ def set_security_headers(response):
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Content-Security-Policy'] = "default-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com 'unsafe-inline'; media-src 'self' blob:; img-src 'self' data: blob:; worker-src 'self' blob:"
+    response.headers['Content-Security-Policy'] = "default-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://checkout.razorpay.com 'unsafe-inline'; media-src 'self' blob:; img-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com; connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com;"
     return response
 
 # Initialize extensions
@@ -51,7 +54,10 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["2000 per day", "500 per hour"])
-babel = Babel()
+razorpay_client = razorpay.Client(auth=(app.config['RAZORPAY_KEY_ID'], app.config['RAZORPAY_KEY_SECRET'])) if app.config['RAZORPAY_KEY_ID'] else None
+
+# APScheduler for background jobs (no-show handling)
+scheduler = BackgroundScheduler(daemon=True)
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO)
@@ -82,6 +88,10 @@ bookings_collection = db.bookings
 invoices_collection = db.invoices
 admin_verification_collection = db.admin_verification
 scan_logs_collection = db.scan_logs
+wallet_transactions_collection = db.wallet_transactions
+subscription_plans_collection = db.subscription_plans
+user_subscriptions_collection = db.user_subscriptions
+watchman_collections_collection = db.watchman_collections
 
 # MongoDB Indexes (idempotent — safe to run on every startup)
 try:
@@ -102,7 +112,6 @@ class User(UserMixin):
         self.role = user_data['role']
         self.name = user_data['name']
         self.verified = user_data.get('verified', True)
-        self.language = user_data.get('language', 'en')
         self.lot_id = user_data.get('lot_id')
 
 @login_manager.user_loader
@@ -122,12 +131,6 @@ def load_user(user_id):
         return User(user_data)
     return None
 
-def get_locale():
-    if current_user.is_authenticated:
-        return current_user.language
-    return request.accept_languages.best_match(app.config['LANGUAGES'].keys())
-
-babel.init_app(app, locale_selector=get_locale)
 
 # Custom decorators
 def role_required(*roles):
@@ -164,11 +167,6 @@ class LoginForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
     remember = BooleanField('Remember Me')
 
-class ResetPasswordForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    new_password = PasswordField('New Password', validators=[DataRequired(), Length(min=6)])
-    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('new_password')])
-
 class VehicleForm(FlaskForm):
     vehicle_number = StringField('Vehicle Number', validators=[DataRequired(), Length(min=3, max=20)])
     vehicle_type = SelectField('Vehicle Type', choices=[('2-wheeler', '2-Wheeler'), ('4-wheeler', '4-Wheeler')], validators=[DataRequired()])
@@ -181,6 +179,8 @@ class ParkingLotForm(FlaskForm):
     two_wheeler_price = FloatField('2-Wheeler Price/Hr (₹)', validators=[DataRequired(), NumberRange(min=0)])
     four_wheeler_slots = IntegerField('4-Wheeler Slots', validators=[DataRequired(), NumberRange(min=0, max=500)])
     four_wheeler_price = FloatField('4-Wheeler Price/Hr (₹)', validators=[DataRequired(), NumberRange(min=0)])
+    walkin_ratio = IntegerField('Walk-in %', validators=[DataRequired(), NumberRange(min=0, max=100)], default=70)
+    prebook_ratio = IntegerField('Pre-book %', validators=[DataRequired(), NumberRange(min=0, max=100)], default=30)
 
 class ParkingSlotForm(FlaskForm):
     slot_number = StringField('Slot Number', validators=[DataRequired(), Length(min=1, max=10)])
@@ -189,11 +189,28 @@ class ParkingSlotForm(FlaskForm):
 
 class BookingForm(FlaskForm):
     vehicle_id = SelectField('Select Vehicle', validators=[DataRequired()])
+
+class PreBookingForm(FlaskForm):
+    vehicle_id = SelectField('Select Vehicle', validators=[DataRequired()])
+    start_time = StringField('Start Time', validators=[DataRequired()])
+    end_time = StringField('End Time', validators=[DataRequired()])
     
 # Helper functions
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def is_vehicle_subscribed(vehicle_id, lot_id):
+    """Return True if an active subscription exists for this vehicle at this lot today."""
+    today = datetime.now()
+    sub = user_subscriptions_collection.find_one({
+        'vehicle_id': ObjectId(vehicle_id),
+        'lot_id': ObjectId(lot_id),
+        'start_date': {'$lte': today},
+        'end_date': {'$gte': today},
+        'status': 'active'
+    })
+    return sub is not None
 
 def calculate_parking_fee(entry_time, exit_time, price_per_hour):
     duration = exit_time - entry_time
@@ -204,6 +221,53 @@ def generate_invoice_number():
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     random_suffix = secrets.token_hex(3).upper()
     return f'INV-{timestamp}-{random_suffix}'
+
+def deduct_from_wallet(user_id, amount, reason, reference_id):
+    """Atomically deduct from wallet, preventing overdraft. Returns True on success."""
+    try:
+        result = users_collection.find_one_and_update(
+            {'_id': ObjectId(user_id), 'wallet_balance': {'$gte': amount}},
+            {'$inc': {'wallet_balance': -amount}}
+        )
+        if result is None:
+            return False
+        wallet_transactions_collection.insert_one({
+            'user_id': ObjectId(user_id),
+            'type': 'debit',
+            'amount': round(amount, 2),
+            'reason': reason,
+            'reference_id': reference_id,
+            'balance_after': round(result['wallet_balance'] - amount, 2),
+            'created_at': datetime.now()
+        })
+        return True
+    except Exception as e:
+        logger.error(f'Wallet deduct error: {str(e)}')
+        return False
+
+def credit_wallet(user_id, amount, reason, reference_id):
+    """Credit amount to wallet. Returns True on success."""
+    try:
+        result = users_collection.find_one_and_update(
+            {'_id': ObjectId(user_id)},
+            {'$inc': {'wallet_balance': amount}},
+            return_document=ReturnDocument.AFTER
+        )
+        if result is None:
+            return False
+        wallet_transactions_collection.insert_one({
+            'user_id': ObjectId(user_id),
+            'type': 'credit',
+            'amount': round(amount, 2),
+            'reason': reason,
+            'reference_id': reference_id,
+            'balance_after': round(result['wallet_balance'], 2),
+            'created_at': datetime.now()
+        })
+        return True
+    except Exception as e:
+        logger.error(f'Wallet credit error: {str(e)}')
+        return False
 
 # Routes - Authentication
 @app.route('/')
@@ -226,7 +290,7 @@ def register():
                 'password': hashed_password,
                 'role': form.role.data,
                 'verified': True if form.role.data == 'user' else False,
-                'language': 'en',
+                'wallet_balance': 0.0,
                 'created_at': datetime.now(),
                 'profile_image': None
             }
@@ -265,6 +329,10 @@ def login():
             user = users_collection.find_one({'email': form.email.data.lower()})
             
             if user and bcrypt.check_password_hash(user['password'], form.password.data):
+                if user.get('is_deleted'):
+                    flash('This account has been deactivated. Please contact support.', 'danger')
+                    return render_template('auth/login.html', form=form)
+                
                 user_obj = User(user)
                 login_user(user_obj, remember=form.remember.data)
                 
@@ -286,30 +354,6 @@ def logout():
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
-
-@app.route('/reset-password', methods=['GET', 'POST'])
-@limiter.limit("100 per hour")
-def reset_password():
-    form = ResetPasswordForm()
-    if form.validate_on_submit():
-        try:
-            user = users_collection.find_one({'email': form.email.data.lower()})
-            if user:
-                hashed_password = bcrypt.generate_password_hash(form.new_password.data).decode('utf-8')
-                users_collection.update_one(
-                    {'_id': user['_id']},
-                    {'$set': {'password': hashed_password}}
-                )
-                flash('Password reset successful! Please log in.', 'success')
-                logger.info(f'Password reset for: {form.email.data}')
-                return redirect(url_for('login'))
-            else:
-                flash('Email not found.', 'danger')
-        except Exception as e:
-            logger.error(f'Password reset error: {str(e)}')
-            flash('Password reset failed. Please try again.', 'danger')
-    
-    return render_template('auth/reset_password.html', form=form)
 
 @app.route('/user/vehicle/regenerate-qr/<vehicle_id>')
 @login_required
@@ -598,6 +642,7 @@ def book_slot(lot_id):
             available_slot = parking_slots_collection.find_one({
                 'lot_id': ObjectId(lot_id),
                 'slot_type': vehicle['vehicle_type'],
+                'mode': {'$in': ['walkin', None]},
                 'status': 'available'
             })
             
@@ -671,7 +716,7 @@ def my_bookings():
     total = bookings_collection.count_documents({'user_id': ObjectId(current_user.id)})
     bookings = list(bookings_collection.find({
         'user_id': ObjectId(current_user.id)
-    }).sort('entry_time', DESCENDING).skip((page-1)*per_page).limit(per_page))
+    }).sort('created_at', DESCENDING).skip((page-1)*per_page).limit(per_page))
     
     for booking in bookings:
         booking['slot'] = parking_slots_collection.find_one({'_id': booking['slot_id']})
@@ -683,7 +728,8 @@ def my_bookings():
     return render_template('user/my_bookings.html',
                          bookings=bookings,
                          page=page,
-                         total_pages=total_pages)
+                         total_pages=total_pages,
+                         now=datetime.now())
 
 @app.route('/user/booking/exit/<booking_id>')
 @login_required
@@ -801,7 +847,475 @@ def user_profile():
             flash('Failed to update profile.', 'danger')
     
     user = users_collection.find_one({'_id': ObjectId(current_user.id)})
-    return render_template('user/profile.html', user=user, languages=app.config['LANGUAGES'])
+    return render_template('user/profile.html', user=user)
+
+@app.route('/user/subscriptions')
+@login_required
+@role_required('user')
+def user_subscriptions():
+    user_id = ObjectId(current_user.id)
+    now = datetime.now()
+
+    # Get user's vehicles to find relevant vehicle types
+    user_vehicles = list(vehicles_collection.find({'user_id': user_id}))
+
+    # Active plans grouped by lot
+    active_plans = list(subscription_plans_collection.find({'active': True}))
+    lots_map = {}
+    for plan in active_plans:
+        lot = parking_lots_collection.find_one({'_id': plan['lot_id']})
+        if lot:
+            lot_key = str(lot['_id'])
+            if lot_key not in lots_map:
+                lots_map[lot_key] = {'lot': lot, 'plans': []}
+            lots_map[lot_key]['plans'].append(plan)
+    grouped_plans = list(lots_map.values())
+
+    # User's active subscriptions with expiry
+    my_subs = list(user_subscriptions_collection.find({
+        'user_id': user_id,
+        'status': 'active',
+        'end_date': {'$gte': now}
+    }).sort('end_date', ASCENDING))
+    for sub in my_subs:
+        sub['plan'] = subscription_plans_collection.find_one({'_id': sub['plan_id']})
+        sub['lot'] = parking_lots_collection.find_one({'_id': sub['lot_id']})
+        sub['vehicle'] = vehicles_collection.find_one({'_id': sub['vehicle_id']})
+        sub['days_left'] = (sub['end_date'] - now).days
+
+    user_doc = users_collection.find_one({'_id': user_id})
+    wallet_balance = user_doc.get('wallet_balance', 0.0)
+
+    return render_template('user/subscriptions.html',
+                         grouped_plans=grouped_plans,
+                         my_subs=my_subs,
+                         user_vehicles=user_vehicles,
+                         wallet_balance=wallet_balance)
+
+@app.route('/user/subscription/buy/<plan_id>', methods=['POST'])
+@login_required
+@role_required('user')
+def buy_subscription(plan_id):
+    try:
+        plan = subscription_plans_collection.find_one({
+            '_id': ObjectId(plan_id),
+            'active': True
+        })
+        if not plan:
+            flash('Subscription plan not found or is inactive.', 'danger')
+            return redirect(url_for('user_subscriptions'))
+
+        vehicle_id = request.form.get('vehicle_id', '')
+        if not vehicle_id:
+            flash('Please select a vehicle.', 'danger')
+            return redirect(url_for('user_subscriptions'))
+
+        vehicle = vehicles_collection.find_one({
+            '_id': ObjectId(vehicle_id),
+            'user_id': ObjectId(current_user.id)
+        })
+        if not vehicle:
+            flash('Vehicle not found.', 'danger')
+            return redirect(url_for('user_subscriptions'))
+
+        if vehicle['vehicle_type'] != plan['vehicle_type']:
+            flash(f'This plan is for {plan["vehicle_type"]} vehicles only.', 'danger')
+            return redirect(url_for('user_subscriptions'))
+
+        # Check if vehicle already has an active subscription at this lot
+        existing = user_subscriptions_collection.find_one({
+            'vehicle_id': vehicle['_id'],
+            'lot_id': plan['lot_id'],
+            'status': 'active',
+            'end_date': {'$gte': datetime.now()}
+        })
+        if existing:
+            flash('This vehicle already has an active subscription at this lot.', 'warning')
+            return redirect(url_for('user_subscriptions'))
+
+        # Verify wallet balance
+        user_doc = users_collection.find_one({'_id': ObjectId(current_user.id)})
+        wallet_balance = user_doc.get('wallet_balance', 0.0)
+        if wallet_balance < plan['price']:
+            flash(f'Insufficient wallet balance. Required: ₹{plan["price"]:.2f}, Available: ₹{wallet_balance:.2f}. Please top up your wallet.', 'danger')
+            return redirect(url_for('user_subscriptions'))
+
+        # Create subscription record
+        start_date = datetime.now()
+        end_date = start_date + timedelta(days=plan['duration_days'])
+        sub_data = {
+            'user_id': ObjectId(current_user.id),
+            'plan_id': plan['_id'],
+            'lot_id': plan['lot_id'],
+            'vehicle_id': vehicle['_id'],
+            'start_date': start_date,
+            'end_date': end_date,
+            'price_paid': plan['price'],
+            'status': 'active',
+            'created_at': datetime.now()
+        }
+        sub_id = user_subscriptions_collection.insert_one(sub_data).inserted_id
+
+        # Deduct from wallet
+        success = deduct_from_wallet(
+            user_id=current_user.id,
+            amount=plan['price'],
+            reason='subscription_purchase',
+            reference_id=str(sub_id)
+        )
+        if not success:
+            # Rollback subscription if wallet deduction failed
+            user_subscriptions_collection.delete_one({'_id': sub_id})
+            flash('Wallet deduction failed. Please try again.', 'danger')
+            return redirect(url_for('user_subscriptions'))
+
+        flash(f'Subscription "{plan["name"]}" purchased successfully! Valid until {end_date.strftime("%d %b %Y")}.', 'success')
+        logger.info(f'Subscription purchased: User {current_user.email}, Plan {plan["name"]}, Vehicle {vehicle["vehicle_number"]}')
+    except Exception as e:
+        logger.error(f'Buy subscription error: {str(e)}')
+        flash('Failed to purchase subscription.', 'danger')
+
+    return redirect(url_for('user_subscriptions'))
+
+# Wallet Routes
+@app.route('/user/wallet')
+@login_required
+@role_required('user')
+def user_wallet():
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    
+    user = users_collection.find_one({'_id': ObjectId(current_user.id)})
+    balance = user.get('wallet_balance', 0.0)
+    
+    total = wallet_transactions_collection.count_documents({'user_id': ObjectId(current_user.id)})
+    transactions = list(wallet_transactions_collection.find({
+        'user_id': ObjectId(current_user.id)
+    }).sort('created_at', DESCENDING).skip((page-1)*per_page).limit(per_page))
+    
+    total_pages = (total + per_page - 1) // per_page
+    
+    return render_template('user/wallet.html',
+                         balance=balance,
+                         transactions=transactions,
+                         page=page,
+                         total_pages=total_pages,
+                         razorpay_key_id=app.config['RAZORPAY_KEY_ID'])
+
+@app.route('/user/wallet/topup/create', methods=['POST'])
+@login_required
+@role_required('user')
+def wallet_topup_create():
+    try:
+        if not razorpay_client:
+            return jsonify({'success': False, 'message': 'Payment gateway not configured'}), 503
+        
+        data = request.get_json()
+        amount = float(data.get('amount', 0))
+        
+        if amount < 50:
+            return jsonify({'success': False, 'message': 'Minimum top-up amount is ₹50'}), 400
+        
+        if amount > 10000:
+            return jsonify({'success': False, 'message': 'Maximum top-up amount is ₹10,000'}), 400
+        
+        # Razorpay expects amount in paise
+        order_data = {
+            'amount': int(amount * 100),
+            'currency': 'INR',
+            'receipt': f'wallet_{current_user.id}_{secrets.token_hex(4)}',
+            'notes': {
+                'user_id': current_user.id,
+                'purpose': 'wallet_topup'
+            }
+        }
+        
+        order = razorpay_client.order.create(data=order_data)
+        
+        return jsonify({
+            'success': True,
+            'order_id': order['id'],
+            'amount': order['amount'],
+            'currency': order['currency'],
+            'key_id': app.config['RAZORPAY_KEY_ID']
+        })
+    except Exception as e:
+        logger.error(f'Wallet topup create error: {str(e)}')
+        return jsonify({'success': False, 'message': 'Failed to create payment order'}), 500
+
+@app.route('/user/wallet/topup/verify', methods=['POST'])
+@login_required
+@role_required('user')
+def wallet_topup_verify():
+    try:
+        data = request.get_json()
+        razorpay_order_id = data.get('razorpay_order_id', '')
+        razorpay_payment_id = data.get('razorpay_payment_id', '')
+        razorpay_signature = data.get('razorpay_signature', '')
+        
+        if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature]):
+            return jsonify({'success': False, 'message': 'Missing payment details'}), 400
+        
+        # Verify Razorpay signature
+        message = f'{razorpay_order_id}|{razorpay_payment_id}'
+        generated_signature = hmac.new(
+            key=app.config['RAZORPAY_KEY_SECRET'].encode(),
+            msg=message.encode(),
+            digestmod=hashlib.sha256
+        ).hexdigest()
+        
+        if generated_signature != razorpay_signature:
+            logger.warning(f'Razorpay signature mismatch for user {current_user.id}')
+            return jsonify({'success': False, 'message': 'Payment verification failed'}), 400
+        
+        # Fetch order from Razorpay to get verified amount (don't trust client)
+        order = razorpay_client.order.fetch(razorpay_order_id)
+        amount = order['amount'] / 100
+        
+        success = credit_wallet(
+            user_id=current_user.id,
+            amount=amount,
+            reason='Wallet top-up via Razorpay',
+            reference_id=razorpay_payment_id
+        )
+        
+        if success:
+            logger.info(f'Wallet topped up: User {current_user.email}, Amount: ₹{amount}, PaymentID: {razorpay_payment_id}')
+            return jsonify({'success': True, 'message': f'₹{amount:.2f} added to wallet successfully!'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to credit wallet'}), 500
+    except Exception as e:
+        logger.error(f'Wallet topup verify error: {str(e)}')
+        return jsonify({'success': False, 'message': 'Payment verification failed'}), 500
+
+# Fee Estimation API
+@app.route('/api/estimate-fee/<lot_id>')
+def estimate_fee_api(lot_id):
+    try:
+        lot = parking_lots_collection.find_one({'_id': ObjectId(lot_id)})
+        if not lot:
+            return jsonify({'success': False, 'message': 'Lot not found'}), 404
+        
+        start_str = request.args.get('start_time', '')
+        end_str = request.args.get('end_time', '')
+        vehicle_type = request.args.get('vehicle_type', '2-wheeler')
+        
+        if not start_str or not end_str:
+            return jsonify({'success': False, 'message': 'start_time and end_time required'}), 400
+        
+        start_time = datetime.fromisoformat(start_str)
+        end_time = datetime.fromisoformat(end_str)
+        
+        if end_time <= start_time:
+            return jsonify({'success': False, 'message': 'end_time must be after start_time'}), 400
+        
+        sample_slot = parking_slots_collection.find_one({
+            'lot_id': ObjectId(lot_id),
+            'slot_type': vehicle_type
+        })
+        if not sample_slot:
+            return jsonify({'success': False, 'message': 'No slots of that type in this lot'}), 404
+        
+        price_per_hour = sample_slot['price_per_hour']
+        fee = calculate_parking_fee(start_time, end_time, price_per_hour)
+        hours = (end_time - start_time).total_seconds() / 3600
+        
+        return jsonify({
+            'success': True,
+            'estimated_fee': fee,
+            'hours': round(hours, 2),
+            'price_per_hour': price_per_hour,
+            'vehicle_type': vehicle_type
+        })
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Invalid datetime format. Use ISO format.'}), 400
+    except Exception as e:
+        logger.error(f'Estimate fee error: {str(e)}')
+        return jsonify({'success': False, 'message': 'Failed to estimate fee'}), 500
+
+# Pre-booking Routes
+@app.route('/user/prebook/<lot_id>', methods=['GET', 'POST'])
+@login_required
+@role_required('user')
+def prebook_slot(lot_id):
+    lot = parking_lots_collection.find_one({'_id': ObjectId(lot_id)})
+    if not lot:
+        flash('Parking lot not found.', 'danger')
+        return redirect(url_for('parking_lots'))
+    
+    form = PreBookingForm()
+    vehicles = list(vehicles_collection.find({'user_id': ObjectId(current_user.id)}))
+    form.vehicle_id.choices = [(str(v['_id']), f"{v['vehicle_number']} ({v['vehicle_type']})") for v in vehicles]
+    
+    if not vehicles:
+        flash('Please add a vehicle before booking.', 'warning')
+        return redirect(url_for('my_vehicles'))
+    
+    if form.validate_on_submit():
+        try:
+            vehicle = vehicles_collection.find_one({'_id': ObjectId(form.vehicle_id.data)})
+            start_time = datetime.fromisoformat(form.start_time.data)
+            end_time = datetime.fromisoformat(form.end_time.data)
+            
+            if start_time <= datetime.now():
+                flash('Start time must be in the future.', 'danger')
+                return redirect(url_for('prebook_slot', lot_id=lot_id))
+            
+            if end_time <= start_time:
+                flash('End time must be after start time.', 'danger')
+                return redirect(url_for('prebook_slot', lot_id=lot_id))
+            
+            # Check vehicle not already reserved or active
+            conflict = bookings_collection.find_one({
+                'vehicle_id': vehicle['_id'],
+                'status': {'$in': ['active', 'reserved']}
+            })
+            if conflict:
+                flash('This vehicle already has an active or reserved booking.', 'danger')
+                return redirect(url_for('prebook_slot', lot_id=lot_id))
+            
+            # Find a prebook slot with no conflicting reservation in that time window
+            prebook_slots = list(parking_slots_collection.find({
+                'lot_id': ObjectId(lot_id),
+                'slot_type': vehicle['vehicle_type'],
+                'mode': 'prebook'
+            }))
+            
+            available_slot = None
+            for slot in prebook_slots:
+                conflict_booking = bookings_collection.find_one({
+                    'slot_id': slot['_id'],
+                    'status': {'$in': ['reserved', 'active']},
+                    'booked_start': {'$lt': end_time},
+                    'booked_end': {'$gt': start_time}
+                })
+                if not conflict_booking:
+                    available_slot = slot
+                    break
+            
+            if not available_slot:
+                flash('No pre-book slots available for your vehicle type in that time window.', 'danger')
+                return redirect(url_for('prebook_slot', lot_id=lot_id))
+            
+            # Calculate estimated fee
+            estimated_fee = calculate_parking_fee(start_time, end_time, available_slot['price_per_hour'])
+            
+            # Check wallet balance
+            user_doc = users_collection.find_one({'_id': ObjectId(current_user.id)})
+            wallet_balance = user_doc.get('wallet_balance', 0.0)
+            if wallet_balance < estimated_fee:
+                flash(f'Insufficient wallet balance. Required: ₹{estimated_fee:.2f}, Available: ₹{wallet_balance:.2f}. Please top up your wallet.', 'danger')
+                return redirect(url_for('prebook_slot', lot_id=lot_id))
+            
+            # Hold full estimated amount
+            booking_data = {
+                'user_id': ObjectId(current_user.id),
+                'slot_id': available_slot['_id'],
+                'vehicle_id': vehicle['_id'],
+                'lot_id': ObjectId(lot_id),
+                'entry_time': None,
+                'exit_time': None,
+                'status': 'reserved',
+                'booking_type': 'prebook',
+                'booked_start': start_time,
+                'booked_end': end_time,
+                'hold_amount': estimated_fee,
+                'checked_in_lot_id': ObjectId(lot_id),
+                'created_at': datetime.now()
+            }
+            booking_id = bookings_collection.insert_one(booking_data).inserted_id
+            
+            deduct_from_wallet(
+                user_id=current_user.id,
+                amount=estimated_fee,
+                reason='Booking hold for pre-book reservation',
+                reference_id=str(booking_id)
+            )
+            
+            # Schedule no-show job at booked_start + 20 minutes
+            noshow_time = start_time + timedelta(minutes=20)
+            scheduler.add_job(
+                func=handle_noshow,
+                trigger='date',
+                run_date=noshow_time,
+                args=[str(booking_id)],
+                id=f'noshow_{booking_id}',
+                replace_existing=True
+            )
+            
+            flash(f'Pre-booking confirmed! ₹{estimated_fee:.2f} held from wallet. Slot: {available_slot["slot_number"]}', 'success')
+            logger.info(f'Pre-booking created: User {current_user.email}, Slot {available_slot["slot_number"]}, {start_time} to {end_time}')
+            return redirect(url_for('my_bookings'))
+        except ValueError:
+            flash('Invalid date/time format.', 'danger')
+        except Exception as e:
+            logger.error(f'Pre-booking error: {str(e)}')
+            flash('Pre-booking failed. Please try again.', 'danger')
+    
+    # GET: show available prebook slots count
+    prebook_2w = parking_slots_collection.count_documents({
+        'lot_id': ObjectId(lot_id), 'slot_type': '2-wheeler', 'mode': 'prebook'
+    })
+    prebook_4w = parking_slots_collection.count_documents({
+        'lot_id': ObjectId(lot_id), 'slot_type': '4-wheeler', 'mode': 'prebook'
+    })
+    
+    user_doc = users_collection.find_one({'_id': ObjectId(current_user.id)})
+    wallet_balance = user_doc.get('wallet_balance', 0.0)
+    
+    return render_template('user/prebook_slot.html',
+                         form=form, lot=lot,
+                         prebook_2w=prebook_2w, prebook_4w=prebook_4w,
+                         wallet_balance=wallet_balance)
+
+@app.route('/user/booking/cancel/<booking_id>', methods=['POST'])
+@login_required
+@role_required('user')
+def cancel_booking(booking_id):
+    try:
+        booking = bookings_collection.find_one({
+            '_id': ObjectId(booking_id),
+            'user_id': ObjectId(current_user.id),
+            'status': 'reserved'
+        })
+        if not booking:
+            flash('Booking not found or cannot be cancelled.', 'danger')
+            return redirect(url_for('my_bookings'))
+        
+        hold_amount = booking.get('hold_amount', 0)
+        booked_start = booking['booked_start']
+        time_until_start = (booked_start - datetime.now()).total_seconds() / 3600
+        
+        if time_until_start > 2:
+            # More than 2 hours before start: full refund
+            credit_wallet(
+                user_id=current_user.id,
+                amount=hold_amount,
+                reason='Full refund - booking cancelled (>2h before start)',
+                reference_id=str(booking['_id'])
+            )
+            flash(f'Booking cancelled. Full refund of ₹{hold_amount:.2f} credited to wallet.', 'success')
+        else:
+            # Less than 2 hours: no refund
+            flash('Booking cancelled. No refund (cancelled within 2 hours of start time).', 'warning')
+        
+        bookings_collection.update_one(
+            {'_id': booking['_id']},
+            {'$set': {'status': 'cancelled', 'cancelled_at': datetime.now()}}
+        )
+        
+        # Remove scheduled no-show job
+        try:
+            scheduler.remove_job(f'noshow_{booking_id}')
+        except Exception:
+            pass
+        
+        logger.info(f'Booking {booking_id} cancelled by user {current_user.email}')
+        return redirect(url_for('my_bookings'))
+    except Exception as e:
+        logger.error(f'Cancel booking error: {str(e)}')
+        flash('Failed to cancel booking.', 'danger')
+        return redirect(url_for('my_bookings'))
 
 # Admin Routes
 @app.route('/admin/dashboard')
@@ -852,41 +1366,83 @@ def manage_slots():
     if request.method == 'POST' and 'create_lot' in request.form:
         if lot_form.validate_on_submit():
             try:
+                walkin_pct = lot_form.walkin_ratio.data or 70
+                prebook_pct = lot_form.prebook_ratio.data or 30
+                if walkin_pct + prebook_pct != 100:
+                    flash('Walk-in % + Pre-book % must equal 100.', 'danger')
+                    lots = list(parking_lots_collection.find({'admin_id': ObjectId(current_user.id)}))
+                    for lt in lots:
+                        lt['slots'] = list(parking_slots_collection.find({'lot_id': lt['_id']}))
+                    return render_template('admin/manage_slots.html', lot_form=lot_form, slot_form=slot_form, lots=lots)
+
                 lot_data = {
                     'admin_id': ObjectId(current_user.id),
                     'name': lot_form.name.data.strip(),
                     'address': lot_form.address.data.strip(),
                     'pincode': lot_form.pincode.data.strip(),
+                    'walkin_ratio': walkin_pct,
+                    'prebook_ratio': prebook_pct,
                     'created_at': datetime.now()
                 }
                 lot_id = parking_lots_collection.insert_one(lot_data).inserted_id
                 
-                # Create slots based on admin-specified counts
+                # Create slots based on admin-specified counts, split by walkin/prebook ratio
                 two_wheeler_count = lot_form.two_wheeler_slots.data
                 two_wheeler_price = lot_form.two_wheeler_price.data
                 four_wheeler_count = lot_form.four_wheeler_slots.data
                 four_wheeler_price = lot_form.four_wheeler_price.data
-                total_slots = two_wheeler_count + four_wheeler_count
+                
+                def split_slots(total, walkin_pct):
+                    walkin = math.floor(total * walkin_pct / 100)
+                    prebook = total - walkin
+                    return walkin, prebook
+                
+                tw_walkin, tw_prebook = split_slots(two_wheeler_count, walkin_pct)
+                fw_walkin, fw_prebook = split_slots(four_wheeler_count, walkin_pct)
                 
                 slots_to_create = []
                 
-                # Create 2-wheeler slots
-                for i in range(1, two_wheeler_count + 1):
+                # Create 2-wheeler walk-in slots
+                for i in range(1, tw_walkin + 1):
                     slots_to_create.append({
                         'lot_id': lot_id,
                         'slot_number': f'A{i}',
                         'slot_type': '2-wheeler',
+                        'mode': 'walkin',
+                        'price_per_hour': two_wheeler_price,
+                        'status': 'available',
+                        'created_at': datetime.now()
+                    })
+                # Create 2-wheeler prebook slots
+                for i in range(tw_walkin + 1, two_wheeler_count + 1):
+                    slots_to_create.append({
+                        'lot_id': lot_id,
+                        'slot_number': f'A{i}',
+                        'slot_type': '2-wheeler',
+                        'mode': 'prebook',
                         'price_per_hour': two_wheeler_price,
                         'status': 'available',
                         'created_at': datetime.now()
                     })
                 
-                # Create 4-wheeler slots
-                for i in range(1, four_wheeler_count + 1):
+                # Create 4-wheeler walk-in slots
+                for i in range(1, fw_walkin + 1):
                     slots_to_create.append({
                         'lot_id': lot_id,
                         'slot_number': f'B{i}',
                         'slot_type': '4-wheeler',
+                        'mode': 'walkin',
+                        'price_per_hour': four_wheeler_price,
+                        'status': 'available',
+                        'created_at': datetime.now()
+                    })
+                # Create 4-wheeler prebook slots
+                for i in range(fw_walkin + 1, four_wheeler_count + 1):
+                    slots_to_create.append({
+                        'lot_id': lot_id,
+                        'slot_number': f'B{i}',
+                        'slot_type': '4-wheeler',
+                        'mode': 'prebook',
                         'price_per_hour': four_wheeler_price,
                         'status': 'available',
                         'created_at': datetime.now()
@@ -909,7 +1465,6 @@ def manage_slots():
                     'role': 'watchman',
                     'verified': True,
                     'lot_id': lot_id,
-                    'language': 'en',
                     'created_at': datetime.now(),
                     'profile_image': None
                 }
@@ -1089,6 +1644,94 @@ def admin_invoices():
                          page=page,
                          total_pages=total_pages)
 
+@app.route('/admin/watchman-audit')
+@login_required
+@role_required('admin')
+def admin_watchman_audit():
+    """Show all watchman cash/UPI collections for admin's lots, grouped by watchman with date filter."""
+    admin_id = ObjectId(current_user.id)
+    lots = list(parking_lots_collection.find({'admin_id': admin_id}))
+    lot_ids = [lot['_id'] for lot in lots]
+    
+    from_date_str = request.args.get('from_date', '')
+    to_date_str = request.args.get('to_date', '')
+    
+    query = {'lot_id': {'$in': lot_ids}}
+    
+    if from_date_str:
+        try:
+            from_date = datetime.strptime(from_date_str, '%Y-%m-%d')
+            query['collected_at'] = {'$gte': from_date}
+        except ValueError:
+            pass
+    if to_date_str:
+        try:
+            to_date = datetime.strptime(to_date_str, '%Y-%m-%d') + timedelta(days=1)
+            if 'collected_at' in query:
+                query['collected_at']['$lt'] = to_date
+            else:
+                query['collected_at'] = {'$lt': to_date}
+        except ValueError:
+            pass
+    
+    collections = list(watchman_collections_collection.find(query).sort('collected_at', DESCENDING))
+    
+    # Group by watchman
+    watchman_groups = {}
+    for c in collections:
+        wid = str(c['watchman_id'])
+        if wid not in watchman_groups:
+            watchman_doc = users_collection.find_one({'_id': c['watchman_id']})
+            lot_doc = parking_lots_collection.find_one({'_id': c['lot_id']})
+            watchman_groups[wid] = {
+                'watchman_name': watchman_doc['name'] if watchman_doc else 'Unknown',
+                'watchman_email': watchman_doc['email'] if watchman_doc else '',
+                'lot_name': lot_doc['name'] if lot_doc else 'Unknown',
+                'total_cash': 0,
+                'total_upi': 0,
+                'count': 0,
+                'records': []
+            }
+        grp = watchman_groups[wid]
+        grp['count'] += 1
+        if c['method'] == 'cash':
+            grp['total_cash'] += c['amount']
+        elif c['method'] == 'upi':
+            grp['total_upi'] += c['amount']
+        
+        inv = invoices_collection.find_one({'_id': c['invoice_id']})
+        vehicle_number = 'N/A'
+        if inv:
+            booking = bookings_collection.find_one({'_id': inv['booking_id']})
+            if booking:
+                v = vehicles_collection.find_one({'_id': booking['vehicle_id']})
+                vehicle_number = v['vehicle_number'] if v else 'N/A'
+        
+        grp['records'].append({
+            'amount': c['amount'],
+            'method': c['method'],
+            'vehicle_number': vehicle_number,
+            'invoice_number': inv.get('invoice_number', 'N/A') if inv else 'N/A',
+            'collected_at': c['collected_at'].strftime('%Y-%m-%d %H:%M:%S')
+        })
+    
+    # Round totals
+    for grp in watchman_groups.values():
+        grp['total_cash'] = round(grp['total_cash'], 2)
+        grp['total_upi'] = round(grp['total_upi'], 2)
+        grp['total'] = round(grp['total_cash'] + grp['total_upi'], 2)
+    
+    grand_cash = round(sum(g['total_cash'] for g in watchman_groups.values()), 2)
+    grand_upi = round(sum(g['total_upi'] for g in watchman_groups.values()), 2)
+    
+    return render_template('admin/watchman_audit.html',
+                         watchman_groups=watchman_groups,
+                         grand_cash=grand_cash,
+                         grand_upi=grand_upi,
+                         grand_total=round(grand_cash + grand_upi, 2),
+                         from_date=from_date_str,
+                         to_date=to_date_str)
+
 @app.route('/admin/profile', methods=['GET', 'POST'])
 @login_required
 @role_required('admin')
@@ -1121,7 +1764,84 @@ def admin_profile():
             flash('Failed to update profile.', 'danger')
     
     user = users_collection.find_one({'_id': ObjectId(current_user.id)})
-    return render_template('admin/profile.html', user=user, languages=app.config['LANGUAGES'])
+    return render_template('admin/profile.html', user=user)
+
+@app.route('/admin/subscriptions', methods=['GET', 'POST'])
+@login_required
+@role_required('admin')
+def admin_subscriptions():
+    admin_id = ObjectId(current_user.id)
+    lots = list(parking_lots_collection.find({'admin_id': admin_id}))
+    lot_ids = [lot['_id'] for lot in lots]
+
+    if request.method == 'POST':
+        action = request.form.get('action', 'create')
+
+        if action == 'toggle':
+            plan_id = request.form.get('plan_id')
+            try:
+                plan = subscription_plans_collection.find_one({
+                    '_id': ObjectId(plan_id),
+                    'lot_id': {'$in': lot_ids}
+                })
+                if plan:
+                    new_status = not plan.get('active', True)
+                    subscription_plans_collection.update_one(
+                        {'_id': plan['_id']},
+                        {'$set': {'active': new_status}}
+                    )
+                    flash(f'Plan {"activated" if new_status else "deactivated"} successfully.', 'success')
+                else:
+                    flash('Plan not found or access denied.', 'danger')
+            except Exception as e:
+                logger.error(f'Toggle subscription plan error: {str(e)}')
+                flash('Failed to toggle plan status.', 'danger')
+            return redirect(url_for('admin_subscriptions'))
+
+        # Create new plan
+        try:
+            name = request.form.get('name', '').strip()
+            duration_days = int(request.form.get('duration_days', 30))
+            price = float(request.form.get('price', 0))
+            vehicle_type = request.form.get('vehicle_type', '2-wheeler')
+            lot_id = request.form.get('lot_id', '')
+
+            if not name or price <= 0 or duration_days <= 0:
+                flash('Please fill all fields with valid values.', 'danger')
+                return redirect(url_for('admin_subscriptions'))
+
+            if ObjectId(lot_id) not in lot_ids:
+                flash('Invalid lot selected.', 'danger')
+                return redirect(url_for('admin_subscriptions'))
+
+            plan_data = {
+                'name': name,
+                'duration_days': duration_days,
+                'price': round(price, 2),
+                'vehicle_type': vehicle_type,
+                'lot_id': ObjectId(lot_id),
+                'admin_id': admin_id,
+                'active': True,
+                'created_at': datetime.now()
+            }
+            subscription_plans_collection.insert_one(plan_data)
+            flash(f'Subscription plan "{name}" created successfully!', 'success')
+            logger.info(f'Subscription plan created: {name} by admin {current_user.email}')
+        except Exception as e:
+            logger.error(f'Create subscription plan error: {str(e)}')
+            flash('Failed to create subscription plan.', 'danger')
+        return redirect(url_for('admin_subscriptions'))
+
+    # GET: show all plans for admin's lots
+    plans = list(subscription_plans_collection.find({'lot_id': {'$in': lot_ids}}).sort('created_at', DESCENDING))
+    for plan in plans:
+        plan['lot'] = parking_lots_collection.find_one({'_id': plan['lot_id']})
+        plan['subscriber_count'] = user_subscriptions_collection.count_documents({
+            'plan_id': plan['_id'],
+            'status': 'active'
+        })
+
+    return render_template('admin/subscriptions.html', plans=plans, lots=lots)
 
 # Super Admin Routes
 @app.route('/super-admin/dashboard')
@@ -1293,36 +2013,516 @@ def all_lots():
     
     return render_template('super_admin/all_lots.html', lots=lots)
 
+@app.route('/invoice/<invoice_id>')
+@login_required
+def view_invoice(invoice_id):
+    try:
+        invoice = invoices_collection.find_one({'_id': ObjectId(invoice_id)})
+        if not invoice:
+            flash('Invoice not found.', 'danger')
+            return redirect(url_for('dashboard'))
+
+        booking = bookings_collection.find_one({'_id': invoice['booking_id']})
+        slot = parking_slots_collection.find_one({'_id': booking['slot_id']})
+        lot = parking_lots_collection.find_one({'_id': slot['lot_id']})
+        vehicle = vehicles_collection.find_one({'_id': booking['vehicle_id']})
+        user = users_collection.find_one({'_id': invoice['user_id']})
+
+        # Access control: invoice owner, admin of lot, watchman of lot, super_admin
+        allowed = False
+        if current_user.role == 'super_admin':
+            allowed = True
+        elif current_user.role == 'user' and str(invoice['user_id']) == current_user.id:
+            allowed = True
+        elif current_user.role == 'admin' and str(lot['admin_id']) == current_user.id:
+            allowed = True
+        elif current_user.role == 'watchman' and current_user.lot_id and current_user.lot_id == lot['_id']:
+            allowed = True
+
+        if not allowed:
+            flash('Access denied.', 'danger')
+            return render_template('errors/403.html'), 403
+
+        return render_template('invoices/view.html',
+                             invoice=invoice,
+                             booking=booking,
+                             slot=slot,
+                             lot=lot,
+                             vehicle=vehicle,
+                             user=user)
+    except Exception as e:
+        logger.error(f'View invoice error: {str(e)}')
+        flash('Failed to load invoice.', 'danger')
+        return redirect(url_for('dashboard'))
+
 @app.route('/super-admin/analytics')
 @login_required
 @role_required('super_admin')
 def platform_analytics():
-    # Daily booking trends (last 7 days)
-    booking_trends = []
-    for i in range(6, -1, -1):
+    # Platform revenue last 30 days
+    platform_revenue = []
+    for i in range(29, -1, -1):
         date = datetime.now() - timedelta(days=i)
         start = date.replace(hour=0, minute=0, second=0, microsecond=0)
         end = start + timedelta(days=1)
-        count = bookings_collection.count_documents({
-            'entry_time': {'$gte': start, '$lt': end}
+        day_invoices = list(invoices_collection.find({'generated_at': {'$gte': start, '$lt': end}}))
+        revenue = sum([inv['amount'] for inv in day_invoices])
+        platform_revenue.append({'date': start.strftime('%Y-%m-%d'), 'revenue': round(revenue, 2)})
+
+    # Top 5 lots by revenue
+    all_lots = list(parking_lots_collection.find({}))
+    lot_revenue = []
+    lot_bookings_count = []
+    for lot in all_lots:
+        lot_slot_ids = [s['_id'] for s in parking_slots_collection.find({'lot_id': lot['_id']})]
+        lot_booking_ids = [b['_id'] for b in bookings_collection.find({'slot_id': {'$in': lot_slot_ids}})]
+        rev = sum([inv['amount'] for inv in invoices_collection.find({'booking_id': {'$in': lot_booking_ids}})])
+        lot_revenue.append({'lot_name': lot['name'], 'revenue': round(rev, 2)})
+        lot_bookings_count.append({'lot_name': lot['name'], 'count': len(lot_booking_ids)})
+    top_lots_revenue = sorted(lot_revenue, key=lambda x: x['revenue'], reverse=True)[:5]
+    top_lots_bookings = sorted(lot_bookings_count, key=lambda x: x['count'], reverse=True)[:5]
+
+    # User growth last 6 months
+    user_growth = []
+    for i in range(5, -1, -1):
+        now = datetime.now()
+        month_start = (now.replace(day=1) - timedelta(days=i * 30)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if month_start.month == 12:
+            month_end = month_start.replace(year=month_start.year + 1, month=1)
+        else:
+            month_end = month_start.replace(month=month_start.month + 1)
+        count = users_collection.count_documents({
+            'role': 'user',
+            'created_at': {'$gte': month_start, '$lt': month_end}
         })
-        booking_trends.append({'date': start.strftime('%Y-%m-%d'), 'count': count})
-    
-    # Revenue trends
-    revenue_trends = []
-    for i in range(6, -1, -1):
+        user_growth.append({'month': month_start.strftime('%Y-%m'), 'count': count})
+
+    # Booking type breakdown
+    walkin_count = bookings_collection.count_documents({'booking_type': {'$exists': False}})
+    walkin_count += bookings_collection.count_documents({'booking_type': 'walkin'})
+    prebooked_count = bookings_collection.count_documents({'booking_type': 'prebook'})
+    subscription_count = invoices_collection.count_documents({'payment_status': 'subscription'})
+    noshow_count = bookings_collection.count_documents({'status': 'noshow'})
+    booking_type_breakdown = {
+        'walkin': walkin_count,
+        'prebooked': prebooked_count,
+        'subscription': subscription_count,
+        'noshow': noshow_count
+    }
+
+    # Unpaid invoices older than 1 hour
+    one_hour_ago = datetime.now() - timedelta(hours=1)
+    unpaid_raw = list(invoices_collection.find({
+        'payment_status': {'$in': ['pending', 'unpaid']},
+        'generated_at': {'$lt': one_hour_ago}
+    }).sort('generated_at', DESCENDING).limit(50))
+    unpaid_invoices = []
+    for inv in unpaid_raw:
+        u = users_collection.find_one({'_id': inv['user_id']})
+        b = bookings_collection.find_one({'_id': inv['booking_id']})
+        s = parking_slots_collection.find_one({'_id': b['slot_id']}) if b else None
+        l = parking_lots_collection.find_one({'_id': s['lot_id']}) if s else None
+        unpaid_invoices.append({
+            'invoice_number': inv.get('invoice_number', ''),
+            'amount': inv['amount'],
+            'generated_at': inv['generated_at'].strftime('%Y-%m-%d %H:%M'),
+            'user_name': u['name'] if u else 'Unknown',
+            'user_email': u['email'] if u else '',
+            'lot_name': l['name'] if l else 'Unknown'
+        })
+
+    return render_template('super_admin/platform_analytics.html',
+                         platform_revenue=platform_revenue,
+                         top_lots_revenue=top_lots_revenue,
+                         top_lots_bookings=top_lots_bookings,
+                         user_growth=user_growth,
+                         booking_type_breakdown=booking_type_breakdown,
+                         unpaid_invoices=unpaid_invoices)
+
+@app.route('/admin/analytics')
+@login_required
+@role_required('admin')
+def admin_analytics():
+    admin_id = ObjectId(current_user.id)
+    lots = list(parking_lots_collection.find({'admin_id': admin_id}))
+    lot_ids = [lot['_id'] for lot in lots]
+    slot_ids = [s['_id'] for s in parking_slots_collection.find({'lot_id': {'$in': lot_ids}})]
+
+    # Revenue daily last 30 days
+    booking_ids_all = [b['_id'] for b in bookings_collection.find({'slot_id': {'$in': slot_ids}})]
+    revenue_daily = []
+    for i in range(29, -1, -1):
         date = datetime.now() - timedelta(days=i)
         start = date.replace(hour=0, minute=0, second=0, microsecond=0)
         end = start + timedelta(days=1)
-        invoices = list(invoices_collection.find({
+        day_inv = list(invoices_collection.find({
+            'booking_id': {'$in': booking_ids_all},
             'generated_at': {'$gte': start, '$lt': end}
         }))
-        revenue = sum([inv['amount'] for inv in invoices])
-        revenue_trends.append({'date': start.strftime('%Y-%m-%d'), 'revenue': revenue})
-    
-    return render_template('super_admin/platform_analytics.html',
-                         booking_trends=booking_trends,
-                         revenue_trends=revenue_trends)
+        rev = sum([inv['amount'] for inv in day_inv])
+        revenue_daily.append({'date': start.strftime('%Y-%m-%d'), 'revenue': round(rev, 2)})
+
+    # Peak hours
+    all_bookings = list(bookings_collection.find({'slot_id': {'$in': slot_ids}, 'entry_time': {'$exists': True, '$ne': None}}))
+    peak_hours = []
+    hour_day_counts = {}
+    for b in all_bookings:
+        if b.get('entry_time'):
+            h = b['entry_time'].hour
+            d = b['entry_time'].weekday()
+            key = (h, d)
+            hour_day_counts[key] = hour_day_counts.get(key, 0) + 1
+    for (h, d), cnt in hour_day_counts.items():
+        peak_hours.append({'hour': h, 'day_of_week': d, 'count': cnt})
+    peak_hours.sort(key=lambda x: x['count'], reverse=True)
+
+    # Occupancy percent per lot
+    occupancy_percent = []
+    for lot in lots:
+        total = parking_slots_collection.count_documents({'lot_id': lot['_id']})
+        occupied = parking_slots_collection.count_documents({'lot_id': lot['_id'], 'status': 'occupied'})
+        occupancy_percent.append({'lot_name': lot['name'], 'occupied': occupied, 'total': total})
+
+    # Booking type breakdown for admin lots
+    walkin = bookings_collection.count_documents({'slot_id': {'$in': slot_ids}, 'booking_type': {'$exists': False}})
+    walkin += bookings_collection.count_documents({'slot_id': {'$in': slot_ids}, 'booking_type': 'walkin'})
+    prebooked = bookings_collection.count_documents({'slot_id': {'$in': slot_ids}, 'booking_type': 'prebook'})
+    sub_count = invoices_collection.count_documents({'booking_id': {'$in': booking_ids_all}, 'payment_status': 'subscription'})
+    noshow = bookings_collection.count_documents({'slot_id': {'$in': slot_ids}, 'status': 'noshow'})
+    booking_type_breakdown = {'walkin': walkin, 'prebooked': prebooked, 'subscription': sub_count, 'noshow': noshow}
+
+    # Watchman collections per watchman
+    watchman_collections_data = []
+    watchmen = list(users_collection.find({'role': 'watchman', 'lot_id': {'$in': lot_ids}}))
+    for w in watchmen:
+        collections = list(watchman_collections_collection.find({'watchman_id': w['_id']}))
+        total_cash = sum(c['amount'] for c in collections if c['method'] == 'cash')
+        total_upi = sum(c['amount'] for c in collections if c['method'] == 'upi')
+        watchman_collections_data.append({'name': w['name'], 'total_cash': round(total_cash, 2), 'total_upi': round(total_upi, 2)})
+
+    return render_template('admin/analytics.html',
+                         revenue_daily=revenue_daily,
+                         peak_hours=peak_hours,
+                         occupancy_percent=occupancy_percent,
+                         booking_type_breakdown=booking_type_breakdown,
+                         watchman_collections=watchman_collections_data)
+
+@app.route('/user/analytics')
+@login_required
+@role_required('user')
+def user_analytics():
+    user_id = ObjectId(current_user.id)
+
+    # Monthly spending last 6 months
+    monthly_spending = []
+    for i in range(5, -1, -1):
+        now = datetime.now()
+        month_start = (now.replace(day=1) - timedelta(days=i * 30)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if month_start.month == 12:
+            month_end = month_start.replace(year=month_start.year + 1, month=1)
+        else:
+            month_end = month_start.replace(month=month_start.month + 1)
+        month_inv = list(invoices_collection.find({
+            'user_id': user_id,
+            'generated_at': {'$gte': month_start, '$lt': month_end}
+        }))
+        amount = sum([inv['amount'] for inv in month_inv])
+        monthly_spending.append({'month': month_start.strftime('%Y-%m'), 'amount': round(amount, 2)})
+
+    # Average duration
+    completed = list(bookings_collection.find({'user_id': user_id, 'status': 'completed', 'entry_time': {'$ne': None}, 'exit_time': {'$ne': None}}))
+    if completed:
+        total_mins = sum([(b['exit_time'] - b['entry_time']).total_seconds() / 60 for b in completed])
+        avg_duration_minutes = round(total_mins / len(completed), 1)
+    else:
+        avg_duration_minutes = 0
+
+    # Most visited lot
+    lot_visits = {}
+    user_bookings = list(bookings_collection.find({'user_id': user_id}))
+    for b in user_bookings:
+        slot = parking_slots_collection.find_one({'_id': b['slot_id']})
+        if slot:
+            lid = str(slot['lot_id'])
+            lot_visits[lid] = lot_visits.get(lid, 0) + 1
+    most_visited_lot = {'name': 'N/A', 'count': 0}
+    if lot_visits:
+        top_lid = max(lot_visits, key=lot_visits.get)
+        top_lot = parking_lots_collection.find_one({'_id': ObjectId(top_lid)})
+        most_visited_lot = {'name': top_lot['name'] if top_lot else 'Unknown', 'count': lot_visits[top_lid]}
+
+    # Booking type breakdown
+    walkin = bookings_collection.count_documents({'user_id': user_id, 'booking_type': {'$exists': False}})
+    walkin += bookings_collection.count_documents({'user_id': user_id, 'booking_type': 'walkin'})
+    prebooked = bookings_collection.count_documents({'user_id': user_id, 'booking_type': 'prebook'})
+    sub_count = invoices_collection.count_documents({'user_id': user_id, 'payment_status': 'subscription'})
+    booking_type_breakdown = {'walkin': walkin, 'prebooked': prebooked, 'subscription': sub_count}
+
+    # Total spent
+    total_spent = sum([inv['amount'] for inv in invoices_collection.find({'user_id': user_id})])
+
+    return render_template('user/analytics.html',
+                         monthly_spending=monthly_spending,
+                         avg_duration_minutes=avg_duration_minutes,
+                         most_visited_lot=most_visited_lot,
+                         booking_type_breakdown=booking_type_breakdown,
+                         total_spent=round(total_spent, 2))
+
+# Super Admin Management Routes
+@app.route('/super-admin/delete-user/<user_id>', methods=['POST'])
+@login_required
+@role_required('super_admin')
+def super_admin_delete_user(user_id):
+    """Soft-delete a user by setting is_deleted=True."""
+    try:
+        user = users_collection.find_one({'_id': ObjectId(user_id)})
+        if not user:
+            flash('User not found.', 'danger')
+            return redirect(url_for('all_users'))
+        if user.get('role') == 'super_admin':
+            flash('Cannot delete a super admin account.', 'danger')
+            return redirect(url_for('all_users'))
+        users_collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$set': {'is_deleted': True, 'deleted_at': datetime.now(), 'deleted_by': ObjectId(current_user.id)}}
+        )
+        logger.info(f'Super admin {current_user.email} soft-deleted user {user["email"]}')
+        flash(f'User {user["name"]} ({user["email"]}) has been deactivated.', 'success')
+    except Exception as e:
+        logger.error(f'Delete user error: {str(e)}')
+        flash('Failed to delete user.', 'danger')
+    return redirect(url_for('all_users'))
+
+@app.route('/super-admin/delete-lot/<lot_id>', methods=['POST'])
+@login_required
+@role_required('super_admin')
+def super_admin_delete_lot(lot_id):
+    """Delete a lot, its slots, cancel reserved bookings with refund, unverify watchmen."""
+    try:
+        lot = parking_lots_collection.find_one({'_id': ObjectId(lot_id)})
+        if not lot:
+            flash('Parking lot not found.', 'danger')
+            return redirect(url_for('all_lots'))
+
+        lot_oid = ObjectId(lot_id)
+        lot_slot_ids = [s['_id'] for s in parking_slots_collection.find({'lot_id': lot_oid})]
+
+        # Cancel all reserved/active bookings and refund hold_amount
+        reserved_bookings = list(bookings_collection.find({
+            'slot_id': {'$in': lot_slot_ids},
+            'status': {'$in': ['reserved', 'active']}
+        }))
+        for booking in reserved_bookings:
+            hold_amount = booking.get('hold_amount', 0)
+            if hold_amount > 0:
+                credit_wallet(
+                    str(booking['user_id']), hold_amount,
+                    'lot_deleted_refund', str(booking['_id'])
+                )
+            bookings_collection.update_one(
+                {'_id': booking['_id']},
+                {'$set': {'status': 'cancelled', 'cancelled_reason': 'lot_deleted', 'cancelled_at': datetime.now()}}
+            )
+            # Free vehicle
+            vehicles_collection.update_one(
+                {'_id': booking['vehicle_id']},
+                {'$set': {'currently_parked': False}}
+            )
+
+        # Unverify watchmen assigned to this lot
+        users_collection.update_many(
+            {'role': 'watchman', 'lot_id': lot_oid},
+            {'$set': {'verified': False}}
+        )
+
+        # Delete all slots
+        parking_slots_collection.delete_many({'lot_id': lot_oid})
+
+        # Delete the lot
+        parking_lots_collection.delete_one({'_id': lot_oid})
+
+        logger.info(f'Super admin {current_user.email} deleted lot {lot["name"]} (ID: {lot_id})')
+        flash(f'Parking lot "{lot["name"]}" and all associated data deleted. {len(reserved_bookings)} bookings cancelled with refunds.', 'success')
+    except Exception as e:
+        logger.error(f'Delete lot error: {str(e)}')
+        flash('Failed to delete parking lot.', 'danger')
+    return redirect(url_for('all_lots'))
+
+@app.route('/super-admin/force-checkout/<booking_id>', methods=['GET', 'POST'])
+@login_required
+@role_required('super_admin')
+def super_admin_force_checkout(booking_id):
+    """Force-checkout an active booking with amount=0 and a logged reason."""
+    try:
+        booking = bookings_collection.find_one({'_id': ObjectId(booking_id)})
+        if not booking:
+            flash('Booking not found.', 'danger')
+            return redirect(url_for('super_admin_dashboard'))
+        if booking['status'] != 'active':
+            flash('Only active bookings can be force-checked-out.', 'warning')
+            return redirect(url_for('super_admin_dashboard'))
+
+        slot = parking_slots_collection.find_one({'_id': booking['slot_id']})
+        vehicle = vehicles_collection.find_one({'_id': booking['vehicle_id']})
+        user = users_collection.find_one({'_id': booking['user_id']})
+        lot = parking_lots_collection.find_one({'_id': slot['lot_id']}) if slot else None
+
+        if request.method == 'POST':
+            reason = request.form.get('reason', '').strip()
+            if not reason:
+                flash('Reason is required for force checkout.', 'danger')
+                return render_template('super_admin/force_checkout.html',
+                                     booking=booking, slot=slot, vehicle=vehicle, user=user, lot=lot)
+
+            now = datetime.now()
+
+            # Complete the booking
+            bookings_collection.update_one(
+                {'_id': booking['_id']},
+                {'$set': {'status': 'completed', 'exit_time': now, 'force_cleared': True, 'force_cleared_by': ObjectId(current_user.id)}}
+            )
+
+            # Free the slot
+            if slot:
+                parking_slots_collection.update_one(
+                    {'_id': slot['_id']},
+                    {'$set': {'status': 'available'}}
+                )
+
+            # Free the vehicle
+            if vehicle:
+                vehicles_collection.update_one(
+                    {'_id': vehicle['_id']},
+                    {'$set': {'currently_parked': False}}
+                )
+
+            # Create invoice with amount=0, payment_status=force_cleared
+            invoices_collection.insert_one({
+                'booking_id': booking['_id'],
+                'user_id': booking['user_id'],
+                'invoice_number': generate_invoice_number(),
+                'amount': 0,
+                'payment_status': 'force_cleared',
+                'notes': reason,
+                'force_cleared_by': ObjectId(current_user.id),
+                'generated_at': now
+            })
+
+            logger.info(f'Super admin {current_user.email} force-checked-out booking {booking_id}. Reason: {reason}')
+            flash('Booking force-checked-out successfully.', 'success')
+            return redirect(url_for('super_admin_dashboard'))
+
+        return render_template('super_admin/force_checkout.html',
+                             booking=booking, slot=slot, vehicle=vehicle, user=user, lot=lot)
+    except Exception as e:
+        logger.error(f'Force checkout error: {str(e)}')
+        flash('Failed to force checkout.', 'danger')
+        return redirect(url_for('super_admin_dashboard'))
+
+@app.route('/super-admin/wallet-adjust/<user_id>', methods=['GET', 'POST'])
+@login_required
+@role_required('super_admin')
+def super_admin_wallet_adjust(user_id):
+    """Manually credit or debit a user's wallet with a logged reason."""
+    try:
+        user = users_collection.find_one({'_id': ObjectId(user_id)})
+        if not user:
+            flash('User not found.', 'danger')
+            return redirect(url_for('all_users'))
+
+        if request.method == 'POST':
+            adjustment_type = request.form.get('adjustment_type', '')
+            amount = request.form.get('amount', 0, type=float)
+            reason = request.form.get('reason', '').strip()
+
+            if adjustment_type not in ('credit', 'debit'):
+                flash('Invalid adjustment type.', 'danger')
+                return render_template('super_admin/wallet_adjust.html', user=user)
+            if amount <= 0:
+                flash('Amount must be greater than zero.', 'danger')
+                return render_template('super_admin/wallet_adjust.html', user=user)
+            if not reason:
+                flash('Reason is required.', 'danger')
+                return render_template('super_admin/wallet_adjust.html', user=user)
+
+            reference_id = f'manual_adj_{secrets.token_hex(4)}'
+            reason_text = f'manual_adjustment: {reason}'
+
+            if adjustment_type == 'credit':
+                success = credit_wallet(str(user['_id']), amount, reason_text, reference_id)
+            else:
+                success = deduct_from_wallet(str(user['_id']), amount, reason_text, reference_id)
+
+            if success:
+                logger.info(f'Super admin {current_user.email} {adjustment_type}ed ₹{amount} for user {user["email"]}. Reason: {reason}')
+                flash(f'Wallet {adjustment_type} of ₹{amount:.2f} applied successfully.', 'success')
+            else:
+                flash(f'Wallet {adjustment_type} failed. Check user balance for debits.', 'danger')
+
+            return redirect(url_for('super_admin_wallet_adjust', user_id=user_id))
+
+        return render_template('super_admin/wallet_adjust.html', user=user)
+    except Exception as e:
+        logger.error(f'Wallet adjust error: {str(e)}')
+        flash('Failed to adjust wallet.', 'danger')
+        return redirect(url_for('all_users'))
+
+@app.route('/super-admin/watchman-collections')
+@login_required
+@role_required('super_admin')
+def super_admin_watchman_collections():
+    """View all watchman collections platform-wide with date filter, grouped by watchman."""
+    try:
+        date_from = request.args.get('date_from', '')
+        date_to = request.args.get('date_to', '')
+
+        query = {}
+        if date_from:
+            try:
+                query['collected_at'] = {'$gte': datetime.strptime(date_from, '%Y-%m-%d')}
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                end_date = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+                if 'collected_at' in query:
+                    query['collected_at']['$lt'] = end_date
+                else:
+                    query['collected_at'] = {'$lt': end_date}
+            except ValueError:
+                pass
+
+        all_collections = list(watchman_collections_collection.find(query).sort('collected_at', DESCENDING))
+
+        # Group by watchman
+        grouped = {}
+        for c in all_collections:
+            wid = str(c['watchman_id'])
+            if wid not in grouped:
+                watchman = users_collection.find_one({'_id': c['watchman_id']})
+                lot = parking_lots_collection.find_one({'_id': c.get('lot_id')}) if c.get('lot_id') else None
+                grouped[wid] = {
+                    'watchman_name': watchman['name'] if watchman else 'Unknown',
+                    'watchman_email': watchman['email'] if watchman else '',
+                    'lot_name': lot['name'] if lot else 'Unknown',
+                    'collections': [],
+                    'total_cash': 0,
+                    'total_upi': 0
+                }
+            grouped[wid]['collections'].append(c)
+            if c.get('method') == 'cash':
+                grouped[wid]['total_cash'] += c.get('amount', 0)
+            elif c.get('method') == 'upi':
+                grouped[wid]['total_upi'] += c.get('amount', 0)
+
+        return render_template('super_admin/watchman_collections.html',
+                             grouped_collections=grouped,
+                             date_from=date_from,
+                             date_to=date_to)
+    except Exception as e:
+        logger.error(f'Watchman collections error: {str(e)}')
+        flash('Failed to load watchman collections.', 'danger')
+        return redirect(url_for('super_admin_dashboard'))
 
 # Watchman Routes
 @app.route('/watchman/dashboard')
@@ -1448,12 +2648,59 @@ def watchman_scan_qr():
             # Same lot — proceed with checkout
             exit_time = datetime.now()
             slot = parking_slots_collection.find_one({'_id': active_booking['slot_id']})
-            fee = calculate_parking_fee(active_booking['entry_time'], exit_time, slot['price_per_hour'])
             
             duration_seconds = (exit_time - active_booking['entry_time']).total_seconds()
             hours = int(duration_seconds // 3600)
             minutes = int((duration_seconds % 3600) // 60)
             duration_str = f'{hours}h {minutes}m'
+            
+            # Check if vehicle has an active subscription at this lot
+            if is_vehicle_subscribed(vehicle['_id'], watchman_lot_id):
+                # Subscription active — free checkout
+                bookings_collection.update_one(
+                    {'_id': active_booking['_id']},
+                    {'$set': {'exit_time': exit_time, 'status': 'completed', 'checked_out_by_watchman_id': ObjectId(current_user.id)}}
+                )
+                
+                parking_slots_collection.update_one(
+                    {'_id': slot['_id']},
+                    {'$set': {'status': 'available'}}
+                )
+                
+                vehicles_collection.update_one(
+                    {'_id': vehicle['_id']},
+                    {'$set': {'currently_parked': False}}
+                )
+                
+                invoices_collection.insert_one({
+                    'booking_id': active_booking['_id'],
+                    'user_id': active_booking['user_id'],
+                    'invoice_number': generate_invoice_number(),
+                    'amount': 0,
+                    'payment_status': 'subscription',
+                    'generated_at': datetime.now()
+                })
+                
+                scan_logs_collection.insert_one({
+                    'watchman_id': ObjectId(current_user.id),
+                    'lot_id': watchman_lot_id,
+                    'vehicle_id': vehicle['_id'],
+                    'action': 'checkout',
+                    'result_message': f'Checked out (subscription). Duration: {duration_str}, Fee: Rs.0',
+                    'timestamp': datetime.now()
+                })
+                
+                logger.info(f'Watchman checkout (subscription): Vehicle {vehicle_number}, Slot {slot["slot_number"]}')
+                return jsonify({
+                    'success': True,
+                    'action': 'checkout',
+                    'slot_number': slot['slot_number'],
+                    'duration': duration_str,
+                    'fee': 0,
+                    'message': f'Vehicle {vehicle_number} checked out (subscription). Duration: {duration_str}. Fee: Rs.0'
+                })
+            
+            fee = calculate_parking_fee(active_booking['entry_time'], exit_time, slot['price_per_hour'])
             
             bookings_collection.update_one(
                 {'_id': active_booking['_id']},
@@ -1471,32 +2718,45 @@ def watchman_scan_qr():
                 {'$set': {'currently_parked': False}}
             )
             
-            invoices_collection.insert_one({
+            # Create invoice with PENDING status — payment collected separately
+            invoice_data = {
                 'booking_id': active_booking['_id'],
                 'user_id': active_booking['user_id'],
                 'invoice_number': generate_invoice_number(),
                 'amount': fee,
-                'payment_status': 'paid',
+                'payment_status': 'pending',
+                'lot_id': watchman_lot_id,
+                'watchman_id': ObjectId(current_user.id),
                 'generated_at': datetime.now()
-            })
+            }
+            invoice_id = invoices_collection.insert_one(invoice_data).inserted_id
+            
+            # Fetch user wallet balance for the response
+            vehicle_owner = users_collection.find_one({'_id': active_booking['user_id']})
+            user_wallet_balance = vehicle_owner.get('wallet_balance', 0.0) if vehicle_owner else 0.0
+            shortfall = max(0, round(fee - user_wallet_balance, 2))
             
             scan_logs_collection.insert_one({
                 'watchman_id': ObjectId(current_user.id),
                 'lot_id': watchman_lot_id,
                 'vehicle_id': vehicle['_id'],
                 'action': 'checkout',
-                'result_message': f'Checked out. Duration: {duration_str}, Fee: Rs.{fee}',
+                'result_message': f'Checked out. Duration: {duration_str}, Fee: Rs.{fee} (payment pending)',
                 'timestamp': datetime.now()
             })
             
-            logger.info(f'Watchman checkout: Vehicle {vehicle_number}, Slot {slot["slot_number"]}, Fee: {fee}')
+            logger.info(f'Watchman checkout: Vehicle {vehicle_number}, Slot {slot["slot_number"]}, Fee: {fee} (pending)')
             return jsonify({
                 'success': True,
-                'action': 'checkout',
+                'action': 'checkout_pending',
+                'amount_due': fee,
+                'user_wallet_balance': round(user_wallet_balance, 2),
+                'shortfall': shortfall,
+                'invoice_id': str(invoice_id),
+                'vehicle_number': vehicle_number,
                 'slot_number': slot['slot_number'],
                 'duration': duration_str,
-                'fee': fee,
-                'message': f'Vehicle {vehicle_number} checked out. Duration: {duration_str}. Fee: Rs.{fee}'
+                'message': f'Vehicle {vehicle_number} checked out. Duration: {duration_str}. Fee: Rs.{fee} — awaiting payment.'
             })
         
         else:
@@ -1624,6 +2884,149 @@ def watchman_recent_scans():
         logger.error(f'Recent scans error: {str(e)}')
         return jsonify([]), 500
 
+@app.route('/watchman/invoice/pay/<invoice_id>', methods=['POST'])
+@login_required
+@role_required('watchman')
+@csrf.exempt
+def watchman_pay_invoice(invoice_id):
+    """Collect payment for a pending checkout invoice. Accepts wallet/cash/upi."""
+    try:
+        data = request.get_json()
+        if not data or 'payment_method' not in data:
+            return jsonify({'success': False, 'message': 'payment_method is required (wallet/cash/upi)'}), 400
+        
+        payment_method = data['payment_method']
+        if payment_method not in ('wallet', 'cash', 'upi'):
+            return jsonify({'success': False, 'message': 'Invalid payment_method. Use wallet, cash, or upi.'}), 400
+        
+        invoice = invoices_collection.find_one({
+            '_id': ObjectId(invoice_id),
+            'payment_status': 'pending'
+        })
+        if not invoice:
+            return jsonify({'success': False, 'message': 'Invoice not found or already paid.'}), 404
+        
+        amount = invoice['amount']
+        user_id = invoice['user_id']
+        
+        if payment_method == 'wallet':
+            success = deduct_from_wallet(
+                user_id=str(user_id),
+                amount=amount,
+                reason='Parking fee (wallet)',
+                reference_id=str(invoice['_id'])
+            )
+            if not success:
+                user_doc = users_collection.find_one({'_id': user_id})
+                wallet_balance = user_doc.get('wallet_balance', 0.0) if user_doc else 0.0
+                shortfall = round(amount - wallet_balance, 2)
+                return jsonify({
+                    'success': False,
+                    'message': f'Insufficient wallet balance. Shortfall: Rs.{shortfall}',
+                    'shortfall': shortfall,
+                    'wallet_balance': round(wallet_balance, 2)
+                })
+            invoices_collection.update_one(
+                {'_id': invoice['_id']},
+                {'$set': {'payment_status': 'paid_wallet', 'paid_at': datetime.now()}}
+            )
+            logger.info(f'Invoice {invoice_id} paid via wallet')
+            return jsonify({'success': True, 'message': f'Rs.{amount} deducted from wallet successfully.', 'payment_status': 'paid_wallet'})
+        
+        elif payment_method in ('cash', 'upi'):
+            status_label = f'paid_{payment_method}'
+            invoices_collection.update_one(
+                {'_id': invoice['_id']},
+                {'$set': {'payment_status': status_label, 'paid_at': datetime.now()}}
+            )
+            watchman_collections_collection.insert_one({
+                'watchman_id': ObjectId(current_user.id),
+                'lot_id': current_user.lot_id,
+                'invoice_id': invoice['_id'],
+                'user_id': user_id,
+                'amount': amount,
+                'method': payment_method,
+                'collected_at': datetime.now()
+            })
+            logger.info(f'Invoice {invoice_id} paid via {payment_method}, collected by watchman {current_user.email}')
+            return jsonify({'success': True, 'message': f'Rs.{amount} collected via {payment_method}.', 'payment_status': status_label})
+    
+    except Exception as e:
+        logger.error(f'Watchman pay invoice error: {str(e)}')
+        return jsonify({'success': False, 'message': 'An error occurred processing payment'}), 500
+
+@app.route('/watchman/collections')
+@login_required
+@role_required('watchman')
+def watchman_collections():
+    """Show this watchman's cash/UPI collection log with optional date filter."""
+    try:
+        from_date_str = request.args.get('from_date', '')
+        to_date_str = request.args.get('to_date', '')
+        
+        query = {'watchman_id': ObjectId(current_user.id)}
+        
+        if from_date_str:
+            try:
+                from_date = datetime.strptime(from_date_str, '%Y-%m-%d')
+                query['collected_at'] = {'$gte': from_date}
+            except ValueError:
+                pass
+        if to_date_str:
+            try:
+                to_date = datetime.strptime(to_date_str, '%Y-%m-%d') + timedelta(days=1)
+                if 'collected_at' in query:
+                    query['collected_at']['$lt'] = to_date
+                else:
+                    query['collected_at'] = {'$lt': to_date}
+            except ValueError:
+                pass
+        
+        collections = list(watchman_collections_collection.find(query).sort('collected_at', DESCENDING))
+        
+        for c in collections:
+            inv = invoices_collection.find_one({'_id': c['invoice_id']})
+            if inv:
+                booking = bookings_collection.find_one({'_id': inv['booking_id']})
+                vehicle = vehicles_collection.find_one({'_id': booking['vehicle_id']}) if booking else None
+                c['invoice_number'] = inv.get('invoice_number', '')
+                c['vehicle_number'] = vehicle['vehicle_number'] if vehicle else 'N/A'
+            else:
+                c['invoice_number'] = 'N/A'
+                c['vehicle_number'] = 'N/A'
+        
+        total_cash = sum(c['amount'] for c in collections if c['method'] == 'cash')
+        total_upi = sum(c['amount'] for c in collections if c['method'] == 'upi')
+        
+        return jsonify({
+            'success': True,
+            'total_cash': round(total_cash, 2),
+            'total_upi': round(total_upi, 2),
+            'total_collected': round(total_cash + total_upi, 2),
+            'count': len(collections),
+            'collections': [{
+                'amount': c['amount'],
+                'method': c['method'],
+                'vehicle_number': c['vehicle_number'],
+                'invoice_number': c['invoice_number'],
+                'collected_at': c['collected_at'].strftime('%Y-%m-%d %H:%M:%S')
+            } for c in collections]
+        })
+    except Exception as e:
+        logger.error(f'Watchman collections error: {str(e)}')
+        return jsonify({'success': False, 'message': 'Failed to fetch collections'}), 500
+
+@app.route('/watchman/collections/page')
+@login_required
+@role_required('watchman')
+def watchman_collections_page():
+    """Render the watchman collections HTML page."""
+    from_date = request.args.get('from_date', '')
+    to_date = request.args.get('to_date', '')
+    return render_template('watchman/collections.html',
+                           from_date=from_date,
+                           to_date=to_date)
+
 # API Routes
 @app.route('/api/slot-status/<lot_id>')
 @login_required
@@ -1672,11 +3075,83 @@ def create_super_admin():
             'password': hashed_password,
             'role': 'super_admin',
             'verified': True,
-            'language': 'en',
+            'wallet_balance': 0.0,
             'created_at': datetime.now(),
             'profile_image': None
         })
         logger.info('Super admin created: superadmin@parking.com / superadmin123')
+
+# No-show handler for APScheduler
+def handle_noshow(booking_id):
+    """Called 20 minutes after booked_start. If still reserved, mark as noshow."""
+    try:
+        booking = bookings_collection.find_one({
+            '_id': ObjectId(booking_id),
+            'status': 'reserved'
+        })
+        if not booking:
+            return  # Already checked in, cancelled, or completed
+        
+        slot = parking_slots_collection.find_one({'_id': booking['slot_id']})
+        price_per_hour = slot['price_per_hour'] if slot else 0
+        
+        # Charge for 20 minutes of occupancy
+        noshow_fee = round(price_per_hour * (20 / 60), 2)
+        hold_amount = booking.get('hold_amount', 0)
+        refund_amount = round(hold_amount - noshow_fee, 2)
+        
+        if refund_amount > 0:
+            credit_wallet(
+                user_id=str(booking['user_id']),
+                amount=refund_amount,
+                reason=f'Partial refund - no-show (20-min fee: Rs.{noshow_fee})',
+                reference_id=str(booking['_id'])
+            )
+        
+        bookings_collection.update_one(
+            {'_id': booking['_id']},
+            {'$set': {
+                'status': 'noshow',
+                'noshow_fee': noshow_fee,
+                'refund_amount': refund_amount,
+                'noshow_at': datetime.now()
+            }}
+        )
+        
+        # Free the slot back
+        if slot:
+            parking_slots_collection.update_one(
+                {'_id': slot['_id']},
+                {'$set': {'status': 'available'}}
+            )
+        
+        logger.info(f'No-show processed: Booking {booking_id}, Fee: {noshow_fee}, Refund: {refund_amount}')
+    except Exception as e:
+        logger.error(f'No-show handler error for booking {booking_id}: {str(e)}')
+
+def reschedule_noshow_jobs():
+    """On startup, reschedule no-show jobs for all reserved bookings with future booked_start."""
+    try:
+        reserved_bookings = list(bookings_collection.find({
+            'status': 'reserved',
+            'booked_start': {'$gt': datetime.now()}
+        }))
+        count = 0
+        for booking in reserved_bookings:
+            noshow_time = booking['booked_start'] + timedelta(minutes=20)
+            if noshow_time > datetime.now():
+                scheduler.add_job(
+                    func=handle_noshow,
+                    trigger='date',
+                    run_date=noshow_time,
+                    args=[str(booking['_id'])],
+                    id=f'noshow_{booking["_id"]}',
+                    replace_existing=True
+                )
+                count += 1
+        logger.info(f'Rescheduled {count} no-show jobs on startup')
+    except Exception as e:
+        logger.error(f'Reschedule noshow jobs error: {str(e)}')
 
 # Rule 10: Migration — sync currently_parked flag on startup
 def migrate_currently_parked():
@@ -1701,7 +3176,35 @@ def migrate_currently_parked():
     except Exception as e:
         logger.error(f'Migration currently_parked error: {str(e)}')
 
+@app.context_processor
+def inject_wallet_balance():
+    balance = 0.0
+    if current_user.is_authenticated and getattr(current_user, 'role', None) == 'user':
+        try:
+            user_doc = users_collection.find_one({'_id': ObjectId(current_user.id)})
+            if user_doc:
+                balance = user_doc.get('wallet_balance', 0.0)
+        except Exception as e:
+            logger.error(f"Context processor error: {str(e)}")
+    return dict(wallet_balance=balance)
+
+@app.route('/user/pre-book')
+@login_required
+@role_required('user')
+def user_pre_book():
+    flash('Generic pre-booking list or view is not yet implemented.', 'info')
+    return "<h4>404 Not Found</h4><p>Route not yet implemented.</p>", 404
+
+@app.route('/super-admin/unpaid-invoices')
+@login_required
+@role_required('super_admin')
+def super_admin_unpaid_invoices():
+    flash('Super admin unpaid invoices view is not yet implemented.', 'info')
+    return "<h4>404 Not Found</h4><p>Route not yet implemented.</p>", 404
+
 if __name__ == '__main__':
     create_super_admin()
     migrate_currently_parked()
+    reschedule_noshow_jobs()
+    scheduler.start()
     app.run(debug=True, host='0.0.0.0', port=5000)

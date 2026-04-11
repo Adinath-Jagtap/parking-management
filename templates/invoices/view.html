@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} - Parking Management{% endblock %}
+
+{% block content %}
+<style>
+    .invoice-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 40px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .invoice-header {
+        border-bottom: 3px solid #0d6efd;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+    }
+    .invoice-header h2 {
+        color: #0d6efd;
+        font-weight: 700;
+    }
+    .invoice-details-table td {
+        padding: 8px 12px;
+        vertical-align: top;
+    }
+    .invoice-details-table .label-col {
+        font-weight: 600;
+        color: #495057;
+        width: 180px;
+        white-space: nowrap;
+    }
+    .invoice-details-table .value-col {
+        color: #212529;
+    }
+    .invoice-total {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    .invoice-total .amount {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #198754;
+    }
+    .badge-wallet { background-color: #0d6efd !important; }
+    .badge-cash { background-color: #198754 !important; }
+    .badge-upi { background-color: #6f42c1 !important; }
+    .badge-subscription { background-color: #0dcaf0 !important; color: #000 !important; }
+    .badge-pending { background-color: #fd7e14 !important; }
+    .badge-force-cleared { background-color: #6c757d !important; }
+    .section-divider {
+        border-top: 1px solid #e9ecef;
+        margin: 20px 0;
+    }
+
+    @media print {
+        .navbar, .no-print, footer, .alert {
+            display: none !important;
+        }
+        .invoice-container {
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            margin: 0;
+            max-width: 100%;
+        }
+        body {
+            background: #fff !important;
+        }
+        .container {
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+    }
+</style>
+
+<div class="no-print mb-3">
+    <a href="javascript:history.back()" class="btn btn-outline-secondary me-2">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <button onclick="window.print()" class="btn btn-primary">
+        <i class="fas fa-print"></i> Print Invoice
+    </button>
+</div>
+
+<div class="invoice-container">
+    <div class="invoice-header d-flex justify-content-between align-items-start">
+        <div>
+            <h2><i class="fas fa-parking"></i> Parking System</h2>
+            <p class="text-muted mb-0">Tax Invoice / Receipt</p>
+        </div>
+        <div class="text-end">
+            <h4 class="mb-1">INVOICE</h4>
+            <p class="mb-0"><strong>{{ invoice.invoice_number }}</strong></p>
+            <p class="text-muted mb-0">{{ invoice.generated_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+        </div>
+    </div>
+
+    <!-- Customer & Vehicle Info -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h6 class="text-uppercase text-muted mb-2"><i class="fas fa-user"></i> Customer Details</h6>
+            <table class="invoice-details-table">
+                <tr>
+                    <td class="label-col">Name</td>
+                    <td class="value-col">{{ user.name }}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Email</td>
+                    <td class="value-col">{{ user.email }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <h6 class="text-uppercase text-muted mb-2"><i class="fas fa-car"></i> Vehicle Details</h6>
+            <table class="invoice-details-table">
+                <tr>
+                    <td class="label-col">Vehicle No.</td>
+                    <td class="value-col"><strong>{{ vehicle.vehicle_number }}</strong></td>
+                </tr>
+                <tr>
+                    <td class="label-col">Vehicle Type</td>
+                    <td class="value-col">{{ vehicle.vehicle_type | capitalize }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Parking Details -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h6 class="text-uppercase text-muted mb-2"><i class="fas fa-map-marker-alt"></i> Parking Location</h6>
+            <table class="invoice-details-table">
+                <tr>
+                    <td class="label-col">Lot Name</td>
+                    <td class="value-col"><strong>{{ lot.name }}</strong></td>
+                </tr>
+                <tr>
+                    <td class="label-col">Address</td>
+                    <td class="value-col">{{ lot.address }}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Slot Number</td>
+                    <td class="value-col"><span class="badge bg-dark">{{ slot.slot_number }}</span></td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <h6 class="text-uppercase text-muted mb-2"><i class="fas fa-clock"></i> Timing</h6>
+            <table class="invoice-details-table">
+                <tr>
+                    <td class="label-col">Entry Time</td>
+                    <td class="value-col">
+                        {% if booking.entry_time %}
+                            {{ booking.entry_time.strftime('%d %b %Y, %I:%M %p') }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label-col">Exit Time</td>
+                    <td class="value-col">
+                        {% if booking.exit_time %}
+                            {{ booking.exit_time.strftime('%d %b %Y, %I:%M %p') }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label-col">Duration</td>
+                    <td class="value-col">
+                        {% if booking.entry_time and booking.exit_time %}
+                            {% set dur = (booking.exit_time - booking.entry_time).total_seconds() %}
+                            {% set hours = (dur // 3600) | int %}
+                            {% set minutes = ((dur % 3600) // 60) | int %}
+                            <strong>{{ hours }}h {{ minutes }}m</strong>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Booking Type -->
+    <div class="mb-3">
+        <span class="text-muted me-2">Booking Type:</span>
+        {% if booking.booking_type == 'prebook' %}
+            <span class="badge bg-info text-dark"><i class="fas fa-calendar-check"></i> Pre-booked</span>
+        {% elif invoice.payment_status == 'subscription' %}
+            <span class="badge badge-subscription"><i class="fas fa-id-card"></i> Subscription</span>
+        {% else %}
+            <span class="badge bg-secondary"><i class="fas fa-walking"></i> Walk-in</span>
+        {% endif %}
+    </div>
+
+    <!-- Amount & Payment -->
+    <div class="invoice-total">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <p class="mb-1 text-muted">Total Amount</p>
+                <p class="amount mb-0">₹{{ "%.2f"|format(invoice.amount) }}</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <p class="mb-1 text-muted">Payment Method</p>
+                <p class="mb-0">
+                    {% if invoice.payment_status == 'paid_wallet' or invoice.payment_status == 'paid' %}
+                        <span class="badge badge-wallet fs-6"><i class="fas fa-wallet"></i> Wallet</span>
+                    {% elif invoice.payment_status == 'paid_cash' %}
+                        <span class="badge badge-cash fs-6"><i class="fas fa-money-bill-wave"></i> Cash</span>
+                    {% elif invoice.payment_status == 'paid_upi' %}
+                        <span class="badge badge-upi fs-6"><i class="fas fa-mobile-alt"></i> UPI</span>
+                    {% elif invoice.payment_status == 'subscription' %}
+                        <span class="badge badge-subscription fs-6"><i class="fas fa-id-card"></i> Subscription</span>
+                    {% elif invoice.payment_status == 'pending' %}
+                        <span class="badge badge-pending fs-6"><i class="fas fa-hourglass-half"></i> Pending</span>
+                    {% elif invoice.payment_status == 'force_cleared' %}
+                        <span class="badge badge-force-cleared fs-6"><i class="fas fa-times-circle"></i> Force Cleared</span>
+                    {% else %}
+                        <span class="badge bg-secondary fs-6">{{ invoice.payment_status }}</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4 text-muted">
+        <small>This is a computer-generated invoice. No signature required.</small>
+    </div>
+</div>
+{% endblock %}

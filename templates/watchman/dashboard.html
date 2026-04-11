@@ -31,283 +31,119 @@
         color: white;
         box-shadow: 0 8px 32px rgba(99, 102, 241, 0.25);
     }
-    .wm-header h2 {
-        font-weight: 700;
-        font-size: 1.6rem;
-        margin: 0;
-    }
-    .wm-header .lot-label {
-        opacity: 0.85;
-        font-size: 0.95rem;
-        margin-top: 4px;
-    }
+    .wm-header h2 { font-weight: 700; font-size: 1.6rem; margin: 0; }
+    .wm-header .lot-label { opacity: 0.85; font-size: 0.95rem; margin-top: 4px; }
 
-    /* Stats cards */
     .stat-card {
-        border-radius: 14px;
-        padding: 22px 20px;
-        color: white;
-        text-align: center;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        border-radius: 14px; padding: 22px 20px; color: white;
+        text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.12);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
-        position: relative;
-        overflow: hidden;
+        position: relative; overflow: hidden;
     }
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 30px rgba(0,0,0,0.18);
-    }
-    .stat-card .stat-icon {
-        font-size: 2.2rem;
-        opacity: 0.3;
-        position: absolute;
-        right: 16px;
-        top: 16px;
-    }
-    .stat-card .stat-value {
-        font-size: 2.2rem;
-        font-weight: 800;
-        line-height: 1.1;
-    }
-    .stat-card .stat-label {
-        font-size: 0.82rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        opacity: 0.9;
-        margin-top: 6px;
-    }
+    .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.18); }
+    .stat-card .stat-icon { font-size: 2.2rem; opacity: 0.3; position: absolute; right: 16px; top: 16px; }
+    .stat-card .stat-value { font-size: 2.2rem; font-weight: 800; line-height: 1.1; }
+    .stat-card .stat-label { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-top: 6px; }
     .stat-total { background: var(--wm-gradient-4); }
     .stat-occupied { background: var(--wm-gradient-3); }
     .stat-available { background: var(--wm-gradient-2); }
 
-    /* Scanner section */
     .scanner-section {
-        background: var(--wm-card-bg);
-        border-radius: 16px;
-        border: 1px solid var(--wm-border);
-        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-        padding: 28px;
-        margin-bottom: 28px;
+        background: var(--wm-card-bg); border-radius: 16px;
+        border: 1px solid var(--wm-border); box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        padding: 28px; margin-bottom: 28px;
     }
-    .scanner-section h4 {
-        font-weight: 700;
-        color: var(--wm-primary);
-        margin-bottom: 20px;
-    }
+    .scanner-section h4 { font-weight: 700; color: var(--wm-primary); margin-bottom: 20px; }
 
-    /* html5-qrcode reader container */
-    #qr-reader {
-        width: 100%;
-        max-width: 500px;
-        margin: 0 auto;
-        border-radius: 14px;
-        overflow: hidden;
-    }
-    #qr-reader video {
-        border-radius: 14px;
-    }
-    /* Override html5-qrcode default styles */
-    #qr-reader__scan_region {
-        min-height: 250px;
-    }
-    #qr-reader__dashboard {
-        padding: 10px !important;
-    }
+    #qr-reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 14px; overflow: hidden; }
+    #qr-reader video { border-radius: 14px; }
+    #qr-reader__scan_region { min-height: 250px; }
+    #qr-reader__dashboard { padding: 10px !important; }
     #qr-reader__dashboard_section_csr button {
-        background: var(--wm-accent) !important;
-        color: white !important;
-        border: none !important;
-        padding: 10px 24px !important;
-        border-radius: 10px !important;
-        font-weight: 600 !important;
-        cursor: pointer !important;
+        background: var(--wm-accent) !important; color: white !important;
+        border: none !important; padding: 10px 24px !important;
+        border-radius: 10px !important; font-weight: 600 !important; cursor: pointer !important;
     }
-    #qr-reader__dashboard_section_csr button:hover {
-        background: var(--wm-accent-light) !important;
-    }
-    #qr-reader__status_span {
-        display: none !important;
-    }
+    #qr-reader__dashboard_section_csr button:hover { background: var(--wm-accent-light) !important; }
+    #qr-reader__status_span { display: none !important; }
 
-    /* Scan method tabs */
-    .scan-tabs {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 20px;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
+    .scan-tabs { display: flex; gap: 8px; margin-bottom: 20px; justify-content: center; flex-wrap: wrap; }
     .scan-tab {
-        padding: 10px 24px;
-        border-radius: 10px;
-        border: 2px solid var(--wm-border);
-        background: white;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: var(--wm-text-muted);
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        padding: 10px 24px; border-radius: 10px; border: 2px solid var(--wm-border);
+        background: white; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+        color: var(--wm-text-muted); transition: all 0.2s; display: flex; align-items: center; gap: 8px;
     }
     .scan-tab:hover { border-color: var(--wm-accent); color: var(--wm-accent); }
-    .scan-tab.active {
-        background: var(--wm-accent);
-        color: white;
-        border-color: var(--wm-accent);
-    }
+    .scan-tab.active { background: var(--wm-accent); color: white; border-color: var(--wm-accent); }
 
-    /* Upload zone */
     .upload-zone {
-        border: 3px dashed var(--wm-border);
-        border-radius: 14px;
-        padding: 40px 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s;
-        background: var(--wm-surface);
-        max-width: 500px;
-        margin: 0 auto;
+        border: 3px dashed var(--wm-border); border-radius: 14px; padding: 40px 20px;
+        text-align: center; cursor: pointer; transition: all 0.3s; background: var(--wm-surface);
+        max-width: 500px; margin: 0 auto;
     }
-    .upload-zone:hover, .upload-zone.dragover {
-        border-color: var(--wm-accent);
-        background: #eef2ff;
-    }
+    .upload-zone:hover, .upload-zone.dragover { border-color: var(--wm-accent); background: #eef2ff; }
     .upload-zone i { font-size: 3rem; color: var(--wm-accent); opacity: 0.5; }
     .upload-zone p { margin-top: 12px; color: var(--wm-text-muted); font-weight: 500; }
 
-    /* Result card */
     .result-card {
-        border-radius: 14px;
-        padding: 24px;
-        margin-top: 20px;
-        display: none;
-        animation: slideUp 0.35s ease;
-        border: none;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        border-radius: 14px; padding: 24px; margin-top: 20px;
+        display: none; animation: slideUp 0.35s ease; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
     .result-card.show { display: block; }
-    .result-card-checkin {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        border-left: 5px solid var(--wm-success);
-        color: #064e3b;
-    }
-    .result-card-checkout {
-        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        border-left: 5px solid var(--wm-info);
-        color: #1e3a5f;
-    }
-    .result-card-error {
-        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-        border-left: 5px solid var(--wm-danger);
-        color: #7f1d1d;
-    }
+    .result-card-checkin { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-left: 5px solid var(--wm-success); color: #064e3b; }
+    .result-card-checkout { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-left: 5px solid var(--wm-info); color: #1e3a5f; }
+    .result-card-pending { background: linear-gradient(135deg, #fef9c3 0%, #fde68a 100%); border-left: 5px solid var(--wm-warning); color: #78350f; }
+    .result-card-error { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-left: 5px solid var(--wm-danger); color: #7f1d1d; }
     .result-card .result-icon { font-size: 2rem; margin-bottom: 10px; }
-    .result-card .result-action {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        font-weight: 700;
-        opacity: 0.8;
-    }
+    .result-card .result-action { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; opacity: 0.8; }
     .result-card .result-message { font-size: 1.05rem; font-weight: 600; margin-top: 6px; }
     .result-card .result-details { margin-top: 12px; font-size: 0.9rem; opacity: 0.85; }
 
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(16px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Manual entry */
-    .manual-section {
-        border-top: 1px solid var(--wm-border);
-        padding-top: 20px;
-        margin-top: 24px;
-    }
-
-    /* Recent logs */
     .logs-section {
-        background: var(--wm-card-bg);
-        border-radius: 16px;
-        border: 1px solid var(--wm-border);
-        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-        padding: 28px;
+        background: var(--wm-card-bg); border-radius: 16px; border: 1px solid var(--wm-border);
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 28px;
     }
-    .logs-section h4 {
-        font-weight: 700;
-        color: var(--wm-primary);
-        margin-bottom: 16px;
-    }
+    .logs-section h4 { font-weight: 700; color: var(--wm-primary); margin-bottom: 16px; }
     .log-entry {
-        display: flex;
-        align-items: center;
-        padding: 12px 14px;
-        border-radius: 10px;
-        margin-bottom: 8px;
-        background: var(--wm-surface);
-        transition: background 0.2s;
+        display: flex; align-items: center; padding: 12px 14px; border-radius: 10px;
+        margin-bottom: 8px; background: var(--wm-surface); transition: background 0.2s;
     }
     .log-entry:hover { background: #eef2ff; }
     .log-action-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 14px;
-        flex-shrink: 0;
-        font-size: 0.85rem;
-        color: white;
+        width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center;
+        justify-content: center; margin-right: 14px; flex-shrink: 0; font-size: 0.85rem; color: white;
     }
     .log-action-icon.checkin { background: var(--wm-success); }
     .log-action-icon.checkout { background: var(--wm-info); }
     .log-action-icon.error { background: var(--wm-danger); }
     .log-action-icon.denied { background: var(--wm-warning); }
     .log-details { flex: 1; min-width: 0; }
-    .log-details .log-msg {
-        font-weight: 600;
-        font-size: 0.88rem;
-        color: var(--wm-text);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .log-details .log-meta {
-        font-size: 0.78rem;
-        color: var(--wm-text-muted);
-        margin-top: 2px;
-    }
+    .log-details .log-msg { font-weight: 600; font-size: 0.88rem; color: var(--wm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .log-details .log-meta { font-size: 0.78rem; color: var(--wm-text-muted); margin-top: 2px; }
 
-    /* Processing spinner */
     .processing-overlay {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(15, 23, 42, 0.6);
-        z-index: 9999;
-        align-items: center;
-        justify-content: center;
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.6); z-index: 9999; align-items: center; justify-content: center;
     }
     .processing-overlay.show { display: flex; }
     .processing-box {
-        background: white;
-        border-radius: 16px;
-        padding: 40px 48px;
-        text-align: center;
-        box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+        background: white; border-radius: 16px; padding: 40px 48px;
+        text-align: center; box-shadow: 0 16px 48px rgba(0,0,0,0.2);
     }
-    .processing-box .spinner-border {
-        width: 3rem; height: 3rem;
-        color: var(--wm-accent);
-    }
-    .processing-box p {
-        margin-top: 16px;
-        font-weight: 600;
-        color: var(--wm-text);
-    }
+    .processing-box .spinner-border { width: 3rem; height: 3rem; color: var(--wm-accent); }
+    .processing-box p { margin-top: 16px; font-weight: 600; color: var(--wm-text); }
+
+    /* Payment modal specifics */
+    .pay-info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+    .pay-info-row:last-child { border-bottom: none; }
+    .pay-info-label { color: #64748b; font-size: 0.9rem; }
+    .pay-info-value { font-weight: 700; font-size: 0.95rem; }
+    .shortfall-alert { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 16px; margin-top: 12px; color: #991b1b; }
+    .pay-btn { border-radius: 10px; font-weight: 700; padding: 10px 0; transition: opacity 0.2s; }
+    .pay-result { border-radius: 10px; padding: 14px 16px; margin-top: 14px; display: none; }
+    .pay-result.show { display: block; }
 </style>
 
 <!-- Processing overlay -->
@@ -315,6 +151,69 @@
     <div class="processing-box">
         <div class="spinner-border" role="status"></div>
         <p>Processing scan...</p>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+            <div class="modal-header" style="background: linear-gradient(135deg,#f59e0b,#d97706); border-radius:16px 16px 0 0; border:none;">
+                <h5 class="modal-title text-white fw-bold" id="paymentModalLabel">
+                    <i class="fas fa-receipt me-2"></i>Collect Payment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Trip summary -->
+                <div class="mb-3">
+                    <div class="pay-info-row">
+                        <span class="pay-info-label"><i class="fas fa-car me-1"></i> Vehicle</span>
+                        <span class="pay-info-value" id="payVehicle">—</span>
+                    </div>
+                    <div class="pay-info-row">
+                        <span class="pay-info-label"><i class="fas fa-parking me-1"></i> Slot</span>
+                        <span class="pay-info-value" id="paySlot">—</span>
+                    </div>
+                    <div class="pay-info-row">
+                        <span class="pay-info-label"><i class="fas fa-clock me-1"></i> Duration</span>
+                        <span class="pay-info-value" id="payDuration">—</span>
+                    </div>
+                    <div class="pay-info-row">
+                        <span class="pay-info-label"><i class="fas fa-rupee-sign me-1"></i> Amount Due</span>
+                        <span class="pay-info-value text-danger fs-5" id="payAmount">—</span>
+                    </div>
+                    <div class="pay-info-row">
+                        <span class="pay-info-label"><i class="fas fa-wallet me-1"></i> User Wallet</span>
+                        <span class="pay-info-value text-success" id="payWallet">—</span>
+                    </div>
+                </div>
+
+                <!-- Shortfall warning -->
+                <div class="shortfall-alert d-none" id="payShortfallAlert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Insufficient wallet balance!</strong>
+                    Shortfall: <span id="payShortfallAmt" class="fw-bold">—</span>.
+                    Use Cash or UPI instead.
+                </div>
+
+                <!-- Payment buttons -->
+                <div class="d-grid gap-2 mt-3" id="payButtons">
+                    <button id="btnPayWallet" class="btn btn-primary pay-btn" onclick="submitPayment('wallet')">
+                        <i class="fas fa-wallet me-2"></i>Pay from Wallet
+                    </button>
+                    <button id="btnPayCash" class="btn btn-success pay-btn" onclick="submitPayment('cash')">
+                        <i class="fas fa-money-bill-wave me-2"></i>Mark as Cash
+                    </button>
+                    <button id="btnPayUpi" class="btn btn-info text-white pay-btn" onclick="submitPayment('upi')">
+                        <i class="fas fa-mobile-alt me-2"></i>Mark as UPI
+                    </button>
+                </div>
+
+                <!-- Result after payment -->
+                <div class="pay-result" id="payResult"></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -362,7 +261,6 @@
 <div class="scanner-section">
     <h4><i class="fas fa-qrcode me-2"></i>QR Code Scanner</h4>
 
-    <!-- Scan method tabs -->
     <div class="scan-tabs">
         <div class="scan-tab active" id="tabCamera" onclick="switchTab('camera')">
             <i class="fas fa-camera"></i> Camera Scan
@@ -375,16 +273,16 @@
         </div>
     </div>
 
-    <!-- Camera scan panel -->
+    <!-- Camera panel -->
     <div id="panelCamera">
         <div id="qr-reader"></div>
     </div>
 
-    <!-- Upload QR image panel -->
+    <!-- Upload panel -->
     <div id="panelUpload" style="display:none;">
         <div class="upload-zone" id="uploadZone" onclick="document.getElementById('qrFileInput').click()">
             <i class="fas fa-cloud-upload-alt"></i>
-            <p>Click to upload or drag & drop a QR code screenshot</p>
+            <p>Click to upload or drag &amp; drop a QR code screenshot</p>
             <small class="text-muted">Supports PNG, JPG, JPEG</small>
         </div>
         <input type="file" id="qrFileInput" accept="image/*" style="display:none;" onchange="handleFileUpload(event)">
@@ -428,7 +326,7 @@
         {% if recent_logs %}
             {% for log in recent_logs %}
             <div class="log-entry">
-                <div class="log-action-icon 
+                <div class="log-action-icon
                     {% if log.action == 'checkin' %}checkin
                     {% elif log.action == 'checkout' %}checkout
                     {% elif log.action in ['checkin_denied', 'checkout_denied'] %}denied
@@ -459,7 +357,6 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- html5-qrcode: production-grade QR scanner library -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
@@ -467,119 +364,161 @@
     let html5QrCode = null;
     let scannerRunning = false;
 
-    // ============ TAB SWITCHING ============
-    function switchTab(tab) {
-        // Stop camera if switching away
-        if (tab !== 'camera' && scannerRunning) {
-            stopCameraScanner();
+    // ============ Payment Modal State ============
+    let currentInvoiceId = null;
+    let paymentModal = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    });
+
+    function openPaymentModal(result) {
+        currentInvoiceId = result.invoice_id;
+
+        document.getElementById('payVehicle').textContent = result.vehicle_number || '—';
+        document.getElementById('paySlot').textContent = result.slot_number || '—';
+        document.getElementById('payDuration').textContent = result.duration || '—';
+        document.getElementById('payAmount').textContent = '₹' + (result.amount_due || 0).toFixed(2);
+        document.getElementById('payWallet').textContent = '₹' + (result.user_wallet_balance || 0).toFixed(2);
+
+        const shortfallAlert = document.getElementById('payShortfallAlert');
+        const btnWallet = document.getElementById('btnPayWallet');
+
+        if (result.shortfall > 0) {
+            shortfallAlert.classList.remove('d-none');
+            document.getElementById('payShortfallAmt').textContent = '₹' + result.shortfall.toFixed(2);
+            btnWallet.disabled = true;
+            btnWallet.classList.add('opacity-50');
+        } else {
+            shortfallAlert.classList.add('d-none');
+            btnWallet.disabled = false;
+            btnWallet.classList.remove('opacity-50');
         }
 
-        document.getElementById('panelCamera').style.display = tab === 'camera' ? 'block' : 'none';
-        document.getElementById('panelUpload').style.display = tab === 'upload' ? 'block' : 'none';
-        document.getElementById('panelManual').style.display = tab === 'manual' ? 'block' : 'none';
+        // Reset result area & re-show buttons
+        document.getElementById('payResult').className = 'pay-result';
+        document.getElementById('payResult').innerHTML = '';
+        document.getElementById('payButtons').style.display = '';
 
-        document.getElementById('tabCamera').classList.toggle('active', tab === 'camera');
-        document.getElementById('tabUpload').classList.toggle('active', tab === 'upload');
-        document.getElementById('tabManual').classList.toggle('active', tab === 'manual');
+        paymentModal.show();
+    }
 
-        // Auto-start camera when switching to camera tab
-        if (tab === 'camera' && !scannerRunning) {
-            startCameraScanner();
+    async function submitPayment(method) {
+        if (!currentInvoiceId) return;
+
+        const btns = document.querySelectorAll('.pay-btn');
+        btns.forEach(b => { b.disabled = true; });
+
+        const resultDiv = document.getElementById('payResult');
+        resultDiv.className = 'pay-result';
+        resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        resultDiv.classList.add('show');
+        resultDiv.style.background = '#f1f5f9';
+
+        try {
+            const resp = await fetch('/watchman/invoice/pay/' + currentInvoiceId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN
+                },
+                body: JSON.stringify({ payment_method: method })
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+                resultDiv.style.background = '#d1fae5';
+                resultDiv.style.border = '1px solid #6ee7b7';
+                resultDiv.style.color = '#064e3b';
+                resultDiv.innerHTML = `<i class="fas fa-check-circle me-2 text-success"></i><strong>${escapeHtml(data.message)}</strong>`;
+                document.getElementById('payButtons').style.display = 'none';
+                // Auto-close modal after 2.5s
+                setTimeout(() => { paymentModal.hide(); loadRecentScans(); }, 2500);
+            } else {
+                resultDiv.style.background = '#fef2f2';
+                resultDiv.style.border = '1px solid #fecaca';
+                resultDiv.style.color = '#991b1b';
+                resultDiv.innerHTML = `<i class="fas fa-times-circle me-2 text-danger"></i><strong>${escapeHtml(data.message || 'Payment failed.')}</strong>`;
+                btns.forEach(b => { b.disabled = false; });
+                // Re-disable wallet btn if still insufficient
+                if (data.shortfall) {
+                    document.getElementById('btnPayWallet').disabled = true;
+                }
+            }
+        } catch (err) {
+            resultDiv.style.background = '#fef2f2';
+            resultDiv.style.border = '1px solid #fecaca';
+            resultDiv.style.color = '#991b1b';
+            resultDiv.innerHTML = '<i class="fas fa-times-circle me-2 text-danger"></i><strong>Network error. Please try again.</strong>';
+            btns.forEach(b => { b.disabled = false; });
         }
     }
 
-    // ============ CAMERA SCANNER (html5-qrcode) ============
+    // ============ TAB SWITCHING ============
+    function switchTab(tab) {
+        if (tab !== 'camera' && scannerRunning) stopCameraScanner();
+        document.getElementById('panelCamera').style.display = tab === 'camera' ? 'block' : 'none';
+        document.getElementById('panelUpload').style.display = tab === 'upload' ? 'block' : 'none';
+        document.getElementById('panelManual').style.display = tab === 'manual' ? 'block' : 'none';
+        document.getElementById('tabCamera').classList.toggle('active', tab === 'camera');
+        document.getElementById('tabUpload').classList.toggle('active', tab === 'upload');
+        document.getElementById('tabManual').classList.toggle('active', tab === 'manual');
+        if (tab === 'camera' && !scannerRunning) startCameraScanner();
+    }
+
+    // ============ CAMERA SCANNER ============
     function startCameraScanner() {
         if (scannerRunning) return;
-
         html5QrCode = new Html5Qrcode("qr-reader");
-
         const config = {
             fps: 10,
-            qrbox: function(viewfinderWidth, viewfinderHeight) {
-                let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                let qrboxSize = Math.max(200, Math.floor(minEdge * 0.7));
-                return { width: qrboxSize, height: qrboxSize };
+            qrbox: function(w, h) {
+                let m = Math.min(w, h);
+                return { width: Math.max(200, Math.floor(m * 0.7)), height: Math.max(200, Math.floor(m * 0.7)) };
             },
             rememberLastUsedCamera: true,
             showTorchButtonIfSupported: true
         };
-
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            onScanSuccess,
-            onScanFailure
-        ).then(() => {
-            scannerRunning = true;
-            console.log('Camera scanner started');
-        }).catch(err => {
-            console.warn('Back camera failed, trying any camera:', err);
-            // Fallback: try any available camera
-            Html5Qrcode.getCameras().then(cameras => {
-                if (cameras && cameras.length > 0) {
-                    html5QrCode.start(
-                        cameras[0].id,
-                        config,
-                        onScanSuccess,
-                        onScanFailure
-                    ).then(() => {
-                        scannerRunning = true;
-                        console.log('Camera scanner started with:', cameras[0].label);
-                    }).catch(err2 => {
-                        console.error('All cameras failed:', err2);
-                        showCameraError(err2);
-                    });
-                } else {
-                    showCameraError(new Error('No cameras found'));
-                }
-            }).catch(err2 => {
-                console.error('Camera enumeration failed:', err2);
-                showCameraError(err2);
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, () => {})
+            .then(() => { scannerRunning = true; })
+            .catch(err => {
+                Html5Qrcode.getCameras().then(cameras => {
+                    if (cameras && cameras.length > 0) {
+                        html5QrCode.start(cameras[0].id, config, onScanSuccess, () => {})
+                            .then(() => { scannerRunning = true; })
+                            .catch(err2 => showCameraError(err2));
+                    } else { showCameraError(new Error('No cameras found')); }
+                }).catch(err2 => showCameraError(err2));
             });
-        });
     }
 
     function showCameraError(err) {
-        const reader = document.getElementById('qr-reader');
-        reader.innerHTML = `
+        document.getElementById('qr-reader').innerHTML = `
             <div class="text-center py-5">
-                <i class="fas fa-video-slash" style="font-size:3rem; color:var(--wm-danger); opacity:0.5;"></i>
-                <p class="mt-3 mb-1" style="font-weight:600; color:var(--wm-text);">Camera not available</p>
+                <i class="fas fa-video-slash" style="font-size:3rem;color:var(--wm-danger);opacity:0.5;"></i>
+                <p class="mt-3 mb-1" style="font-weight:600;">Camera not available</p>
                 <p class="text-muted" style="font-size:0.85rem;">
                     ${err.message || 'Could not access camera'}<br>
                     <strong>Use "Upload QR Image" or "Manual Entry" tab instead.</strong>
                 </p>
-                ${location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1' 
-                    ? '<p class="text-warning mt-2" style="font-size:0.8rem;"><i class="fas fa-exclamation-triangle me-1"></i>Camera requires HTTPS. Deploy to Render or use localhost.</p>' 
-                    : ''}
             </div>`;
     }
 
     function stopCameraScanner() {
         if (html5QrCode && scannerRunning) {
-            html5QrCode.stop().then(() => {
-                scannerRunning = false;
-                console.log('Camera scanner stopped');
-            }).catch(err => console.error('Stop error:', err));
+            html5QrCode.stop().then(() => { scannerRunning = false; }).catch(() => {});
         }
     }
 
     let lastProcessedData = null;
     let processingCooldown = false;
 
-    function onScanSuccess(decodedText, decodedResult) {
-        // Prevent double-processing of same QR within 5 seconds
-        if (processingCooldown) return;
-        if (decodedText === lastProcessedData) return;
-
+    function onScanSuccess(decodedText) {
+        if (processingCooldown || decodedText === lastProcessedData) return;
         lastProcessedData = decodedText;
         processingCooldown = true;
-
-        // Pause scanner, process, then resume
         stopCameraScanner();
         processQrData(decodedText).then(() => {
-            // Wait 3 seconds before allowing next scan
             setTimeout(() => {
                 processingCooldown = false;
                 lastProcessedData = null;
@@ -588,24 +527,13 @@
         });
     }
 
-    function onScanFailure(error) {
-        // Silence - normal when no QR is visible
-    }
-
     // ============ QR IMAGE UPLOAD ============
-    // Drag and drop support
     const uploadZone = document.getElementById('uploadZone');
     if (uploadZone) {
-        uploadZone.addEventListener('dragover', e => {
-            e.preventDefault();
-            uploadZone.classList.add('dragover');
-        });
-        uploadZone.addEventListener('dragleave', () => {
-            uploadZone.classList.remove('dragover');
-        });
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
         uploadZone.addEventListener('drop', e => {
-            e.preventDefault();
-            uploadZone.classList.remove('dragover');
+            e.preventDefault(); uploadZone.classList.remove('dragover');
             const file = e.dataTransfer.files[0];
             if (file) scanQrFromFile(file);
         });
@@ -614,89 +542,41 @@
     function handleFileUpload(event) {
         const file = event.target.files[0];
         if (file) scanQrFromFile(file);
-        event.target.value = ''; // Reset so same file can be re-uploaded
+        event.target.value = '';
     }
 
     function scanQrFromFile(file) {
-        try {
-            if (!file.type.startsWith('image/')) {
-                alert('Please upload an image file (PNG, JPG, JPEG).');
-                return;
-            }
-
-            showProcessing(true);
-            console.log('Reading file:', file.name, file.type, file.size, 'bytes');
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    console.log('File read complete, loading image...');
-                    const img = new Image();
-                    img.onload = function() {
-                        try {
-                            console.log('Image loaded:', img.width, 'x', img.height);
-                            // Draw the image onto a temporary canvas
-                            const canvas = document.createElement('canvas');
-                            canvas.width = img.width;
-                            canvas.height = img.height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0);
-
-                            // Read QR using jsQR
-                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                            console.log('Running jsQR on', imageData.width, 'x', imageData.height, 'pixels...');
-                            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                                inversionAttempts: 'attemptBoth'
-                            });
-
-                            showProcessing(false);
-
-                            if (code && code.data) {
-                                console.log('QR decoded from image:', code.data);
-                                processQrData(code.data);
-                            } else {
-                                console.log('jsQR returned null - no QR found in image');
-                                alert('Could not read QR code from this image.\nMake sure the QR code is clear, fully visible, and not too small.');
-                            }
-                        } catch (err) {
-                            showProcessing(false);
-                            console.error('Canvas/jsQR error:', err);
-                            alert('Error processing image: ' + err.message);
-                        }
-                    };
-                    img.onerror = function() {
-                        showProcessing(false);
-                        console.error('Image load failed');
-                        alert('Failed to load the image file.');
-                    };
-                    img.src = e.target.result;
-                } catch (err) {
-                    showProcessing(false);
-                    console.error('Image creation error:', err);
-                    alert('Error: ' + err.message);
+        if (!file.type.startsWith('image/')) { alert('Please upload an image file.'); return; }
+        showProcessing(true);
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+                showProcessing(false);
+                if (code && code.data) {
+                    processQrData(code.data);
+                } else {
+                    alert('Could not read QR code from this image. Make sure the QR code is clear and fully visible.');
                 }
             };
-            reader.onerror = function() {
-                showProcessing(false);
-                console.error('FileReader error');
-                alert('Failed to read the file.');
-            };
-            reader.readAsDataURL(file);
-        } catch (err) {
-            showProcessing(false);
-            console.error('scanQrFromFile error:', err);
-            alert('Error: ' + err.message);
-        }
+            img.onerror = () => { showProcessing(false); alert('Failed to load image.'); };
+            img.src = e.target.result;
+        };
+        reader.onerror = () => { showProcessing(false); alert('Failed to read file.'); };
+        reader.readAsDataURL(file);
     }
 
     // ============ MANUAL ENTRY ============
     function submitManualQr() {
         const input = document.getElementById('manualQrInput');
         const data = input.value.trim();
-        if (!data) {
-            alert('Please paste QR data first.');
-            return;
-        }
+        if (!data) { alert('Please paste QR data first.'); return; }
         processQrData(data);
         input.value = '';
     }
@@ -707,10 +587,7 @@
         try {
             const resp = await fetch('/watchman/scan-qr', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': CSRF_TOKEN
-                },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
                 body: JSON.stringify({ qr_data: qrData })
             });
             const result = await resp.json();
@@ -718,7 +595,6 @@
             refreshStats();
             loadRecentScans();
         } catch (err) {
-            console.error('Scan error:', err);
             showResult({ success: false, message: 'Network error. Please try again.' });
         } finally {
             showProcessing(false);
@@ -741,44 +617,53 @@
             action.textContent = '✅ CHECK-IN';
             message.textContent = result.message;
             details.innerHTML = result.slot_number
-                ? `<i class="fas fa-parking"></i> Assigned to slot <strong>${result.slot_number}</strong>`
-                : '';
+                ? `<i class="fas fa-parking"></i> Assigned to slot <strong>${escapeHtml(result.slot_number)}</strong>` : '';
+            setTimeout(() => hideResult(), 8000);
+
         } else if (result.success && result.action === 'checkout') {
+            // Subscription free checkout
             card.classList.add('result-card-checkout');
             icon.innerHTML = '<i class="fas fa-sign-out-alt" style="color:#2563eb;"></i>';
-            action.textContent = '🔵 CHECK-OUT';
+            action.textContent = '🔵 CHECK-OUT (SUBSCRIPTION)';
             message.textContent = result.message;
             details.innerHTML = '';
-            if (result.duration) details.innerHTML += `<div><i class="fas fa-clock"></i> Duration: <strong>${result.duration}</strong></div>`;
-            if (result.fee !== undefined) details.innerHTML += `<div><i class="fas fa-rupee-sign"></i> Fee: <strong>₹${result.fee}</strong></div>`;
+            if (result.duration) details.innerHTML += `<div><i class="fas fa-clock"></i> Duration: <strong>${escapeHtml(result.duration)}</strong></div>`;
+            details.innerHTML += `<div><span class="badge bg-success mt-1">Free — Subscription</span></div>`;
+            setTimeout(() => hideResult(), 8000);
+
+        } else if (result.success && result.action === 'checkout_pending') {
+            // Payment required — show result card briefly, then open modal
+            card.classList.add('result-card-pending');
+            icon.innerHTML = '<i class="fas fa-cash-register" style="color:#d97706;"></i>';
+            action.textContent = '🟡 CHECKOUT — COLLECT PAYMENT';
+            message.textContent = result.message;
+            details.innerHTML = `
+                <div><i class="fas fa-clock"></i> Duration: <strong>${escapeHtml(result.duration || '')}</strong></div>
+                <div><i class="fas fa-rupee-sign"></i> Amount Due: <strong>₹${(result.amount_due || 0).toFixed(2)}</strong></div>`;
+            // Open payment modal immediately
+            openPaymentModal(result);
+
         } else {
             card.classList.add('result-card-error');
             icon.innerHTML = '<i class="fas fa-times-circle" style="color:#dc2626;"></i>';
             action.textContent = '❌ ERROR';
             message.textContent = result.message || 'An unknown error occurred.';
             details.innerHTML = '';
+            setTimeout(() => hideResult(), 8000);
         }
-
-        // Auto-hide after 8 seconds
-        setTimeout(() => { hideResult(); }, 8000);
     }
 
     function hideResult() {
-        const card = document.getElementById('resultCard');
-        card.className = 'result-card';
+        document.getElementById('resultCard').className = 'result-card';
     }
 
     let processingTimeout = null;
     function showProcessing(show) {
         const overlay = document.getElementById('processingOverlay');
         overlay.classList.toggle('show', show);
-        // Safety: auto-hide after 15 seconds no matter what
         if (show) {
             if (processingTimeout) clearTimeout(processingTimeout);
-            processingTimeout = setTimeout(() => {
-                overlay.classList.remove('show');
-                console.warn('Processing timeout - auto-hidden after 15s');
-            }, 15000);
+            processingTimeout = setTimeout(() => { overlay.classList.remove('show'); }, 15000);
         } else {
             if (processingTimeout) { clearTimeout(processingTimeout); processingTimeout = null; }
         }
@@ -791,9 +676,7 @@
             document.getElementById('statTotal').textContent = data.total;
             document.getElementById('statOccupied').textContent = data.occupied;
             document.getElementById('statAvailable').textContent = data.available;
-        } catch (err) {
-            console.error('Stats refresh error:', err);
-        }
+        } catch (err) { console.error('Stats refresh error:', err); }
     }
 
     async function loadRecentScans() {
@@ -801,53 +684,37 @@
             const resp = await fetch('/watchman/recent-scans');
             const logs = await resp.json();
             const container = document.getElementById('logsContainer');
-
             if (!logs.length) {
-                container.innerHTML = `
-                    <div class="text-center text-muted py-4">
-                        <i class="fas fa-inbox" style="font-size:2rem; opacity:0.3;"></i>
-                        <p class="mt-2 mb-0">No scans yet. Start scanning QR codes!</p>
-                    </div>`;
+                container.innerHTML = `<div class="text-center text-muted py-4"><i class="fas fa-inbox" style="font-size:2rem;opacity:0.3;"></i><p class="mt-2 mb-0">No scans yet.</p></div>`;
                 return;
             }
-
             container.innerHTML = logs.map(log => {
-                let iconClass = 'error';
-                let iconHtml = '<i class="fas fa-exclamation"></i>';
+                let iconClass = 'error', iconHtml = '<i class="fas fa-exclamation"></i>';
                 if (log.action === 'checkin') { iconClass = 'checkin'; iconHtml = '<i class="fas fa-arrow-right"></i>'; }
                 else if (log.action === 'checkout') { iconClass = 'checkout'; iconHtml = '<i class="fas fa-arrow-left"></i>'; }
                 else if (log.action.includes('denied')) { iconClass = 'denied'; iconHtml = '<i class="fas fa-ban"></i>'; }
-
-                const vehiclePart = log.vehicle_number
-                    ? `<i class="fas fa-car me-1"></i>${log.vehicle_number} · `
-                    : '';
-
-                return `
-                    <div class="log-entry">
-                        <div class="log-action-icon ${iconClass}">${iconHtml}</div>
-                        <div class="log-details">
-                            <div class="log-msg">${escapeHtml(log.result_message)}</div>
-                            <div class="log-meta">${vehiclePart}<i class="fas fa-clock me-1"></i>${log.timestamp}</div>
-                        </div>
-                    </div>`;
+                const vp = log.vehicle_number ? `<i class="fas fa-car me-1"></i>${escapeHtml(log.vehicle_number)} · ` : '';
+                return `<div class="log-entry">
+                    <div class="log-action-icon ${iconClass}">${iconHtml}</div>
+                    <div class="log-details">
+                        <div class="log-msg">${escapeHtml(log.result_message)}</div>
+                        <div class="log-meta">${vp}<i class="fas fa-clock me-1"></i>${log.timestamp}</div>
+                    </div>
+                </div>`;
             }).join('');
-        } catch (err) {
-            console.error('Load scans error:', err);
-        }
+        } catch (err) { console.error('Load scans error:', err); }
     }
 
     function escapeHtml(text) {
         const div = document.createElement('div');
-        div.appendChild(document.createTextNode(text));
+        div.appendChild(document.createTextNode(text || ''));
         return div.innerHTML;
     }
 
-    // Allow Enter key in manual input
     document.getElementById('manualQrInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') submitManualQr();
     });
 
-    // Auto-start camera scanner on page load (safe, non-blocking)
     setTimeout(() => {
         try { startCameraScanner(); } catch(e) { console.error('Camera auto-start failed:', e); }
     }, 500);
