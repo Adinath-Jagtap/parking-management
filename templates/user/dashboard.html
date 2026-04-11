@@ -56,7 +56,7 @@
                                     <th>Slot</th>
                                     <th>Vehicle</th>
                                     <th>Entry Time</th>
-                                    <th>Action</th>
+                                    <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -67,11 +67,8 @@
                                     <td>{{ booking.vehicle.vehicle_number }}</td>
                                     <td>{{ booking.entry_time.strftime('%Y-%m-%d %H:%M') }}</td>
                                     <td>
-                                        <a href="{{ url_for('exit_booking', booking_id=booking._id) }}" 
-                                           class="btn btn-sm btn-danger"
-                                           onclick="return confirm('Complete parking and generate invoice?')">
-                                            <i class="fas fa-sign-out-alt"></i> Exit
-                                        </a>
+                                        <span class="badge bg-success"><i class="fas fa-car"></i> Currently Parked</span>
+                                        <br><small class="text-muted">Show QR to watchman to exit</small>
                                     </td>
                                 </tr>
                                 {% endfor %}

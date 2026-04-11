@@ -112,9 +112,17 @@
                             <tbody>
                                 {% for booking in recent_bookings %}
                                 <tr>
-                                    <td>{{ booking.user.name }}</td>
-                                    <td>{{ booking.vehicle.vehicle_number }}</td>
-                                    <td>{{ booking.entry_time.strftime('%m-%d %H:%M') }}</td>
+                                    <td>{{ booking.user.name if booking.user else 'Unknown' }}</td>
+                                    <td>{{ booking.vehicle.vehicle_number if booking.vehicle else 'N/A' }}</td>
+                                    <td>
+                                        {% if booking.entry_time %}
+                                            {{ booking.entry_time.strftime('%m-%d %H:%M') }}
+                                        {% elif booking.booked_start %}
+                                            <small class="text-muted">Reserved: {{ booking.booked_start.strftime('%m-%d %H:%M') }}</small>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

@@ -71,6 +71,7 @@
                 {% if prebook_2w > 0 or prebook_4w > 0 %}
                     <form method="POST" action="{{ url_for('prebook_slot', lot_id=lot._id) }}" id="prebook-form">
                         {{ form.hidden_tag() }}
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                         <div class="mb-3">
                             {{ form.vehicle_id.label(class="form-label") }}

@@ -12,6 +12,7 @@
             <div class="card-body">
                 <form method="POST" action="{{ url_for('register') }}">
                     {{ form.hidden_tag() }}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
                     <div class="mb-3">
                         {{ form.name.label(class="form-label") }}

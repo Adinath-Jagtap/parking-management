@@ -7,7 +7,7 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body">
-        {% if unpaid_invoices %}
+        {% if invoices %}
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
@@ -15,6 +15,7 @@
                         <th style="width:30px;"></th>
                         <th>Invoice #</th>
                         <th>User</th>
+                        <th>Vehicle</th>
                         <th>Lot</th>
                         <th class="text-end">Amount</th>
                         <th>Created</th>
@@ -23,10 +24,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for inv in unpaid_invoices %}
-                    <tr data-generated="{{ inv.generated_at }}" {% if inv.hours_old is defined and inv.hours_old >= 24 %}class="table-warning"{% endif %}>
+                    {% for inv in invoices %}
+                    <tr class="{% if inv.age_hours >= 24 %}table-danger{% elif inv.age_hours >= 12 %}table-warning{% endif %}">
                         <td class="flag-cell">
-                            {% if inv.hours_old is defined and inv.hours_old >= 24 %}
+                            {% if inv.age_hours >= 24 %}
                                 <i class="fas fa-flag text-danger" title="Overdue > 24 hours"></i>
                             {% else %}
                                 <i class="fas fa-clock text-warning" title="Pending"></i>
@@ -34,17 +35,45 @@
                         </td>
                         <td><strong>{{ inv.invoice_number }}</strong></td>
                         <td>
-                            {{ inv.user_name }}<br>
-                            <small class="text-muted">{{ inv.user_email }}</small>
+                            {% if inv.user %}
+                                {{ inv.user.name }}<br>
+                                <small class="text-muted">{{ inv.user.email }}</small>
+                            {% else %}
+                                <span class="text-muted">Unknown</span>
+                            {% endif %}
                         </td>
-                        <td>{{ inv.lot_name }}</td>
-                        <td class="text-end fw-bold">₹{{ "%.2f"|format(inv.amount) }}</td>
-                        <td><small>{{ inv.generated_at }}</small></td>
-                        <td class="age-cell fw-semibold"></td>
                         <td>
-                            {% if inv.booking_id %}
-                            <a href="{{ url_for('super_admin_force_checkout', booking_id=inv.booking_id) }}" class="btn btn-sm btn-warning" title="Force Clear">
+                            {% if inv.vehicle %}
+                                <span class="badge bg-secondary">{{ inv.vehicle.vehicle_number }}</span><br>
+                                <small class="text-muted">{{ inv.vehicle.vehicle_type }}</small>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if inv.lot %}
+                                {{ inv.lot.name }}
+                            {% else %}
+                                <span class="text-muted">Unknown</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-bold">₹{{ "%.2f"|format(inv.amount) }}</td>
+                        <td><small>{{ inv.generated_at.strftime('%d %b %Y, %H:%M') }}</small></td>
+                        <td>
+                            {% if inv.age_hours >= 24 %}
+                                <span class="badge bg-danger px-2 py-1">{{ inv.age_hours }}h</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark px-2 py-1">{{ inv.age_hours }}h</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if inv.booking and inv.booking.status == 'active' %}
+                            <a href="{{ url_for('super_admin_force_checkout', booking_id=inv.booking._id) }}" class="btn btn-sm btn-warning" title="Force Clear">
                                 <i class="fas fa-sign-out-alt"></i> Force Clear
+                            </a>
+                            {% elif inv.booking %}
+                            <a href="{{ url_for('view_invoice', invoice_id=inv._id) }}" class="btn btn-sm btn-outline-secondary" title="View Invoice">
+                                <i class="fas fa-eye"></i> View
                             </a>
                             {% else %}
                             <span class="text-muted">—</span>
@@ -55,6 +84,12 @@
                 </tbody>
             </table>
         </div>
+
+        <div class="mt-3 text-muted" style="font-size: 0.85rem;">
+            <i class="fas fa-info-circle me-1"></i>
+            Showing {{ invoices|length }} unpaid invoice(s) older than 1 hour.
+            Rows highlighted in <span class="text-danger fw-bold">red</span> are overdue by 24+ hours.
+        </div>
         {% else %}
         <div class="text-center py-4">
             <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
@@ -63,34 +98,4 @@
         {% endif %}
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Calculate age for each row client-side
-    document.querySelectorAll('tr[data-generated]').forEach(function(row) {
-        var genStr = row.dataset.generated;
-        if (!genStr) return;
-        var genDate = new Date(genStr.replace(' ', 'T'));
-        var now = new Date();
-        var diffMs = now - genDate;
-        var diffHours = Math.floor(diffMs / 3600000);
-        var diffDays = Math.floor(diffHours / 24);
-        var remHours = diffHours % 24;
-
-        var ageCell = row.querySelector('.age-cell');
-        if (!ageCell) return;
-
-        var ageText = '';
-        if (diffDays > 0) ageText = diffDays + 'd ' + remHours + 'h';
-        else ageText = diffHours + 'h';
-        ageCell.textContent = ageText;
-
-        if (diffHours >= 24) {
-            ageCell.classList.add('text-danger');
-        } else {
-            ageCell.classList.add('text-warning');
-        }
-    });
-</script>
 {% endblock %}

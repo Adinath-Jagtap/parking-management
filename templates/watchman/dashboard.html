@@ -135,7 +135,7 @@
     .processing-box .spinner-border { width: 3rem; height: 3rem; color: var(--wm-accent); }
     .processing-box p { margin-top: 16px; font-weight: 600; color: var(--wm-text); }
 
-    /* Payment modal specifics */
+    /* Payment inline & modal specifics */
     .pay-info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
     .pay-info-row:last-child { border-bottom: none; }
     .pay-info-label { color: #64748b; font-size: 0.9rem; }
@@ -144,6 +144,7 @@
     .pay-btn { border-radius: 10px; font-weight: 700; padding: 10px 0; transition: opacity 0.2s; }
     .pay-result { border-radius: 10px; padding: 14px 16px; margin-top: 14px; display: none; }
     .pay-result.show { display: block; }
+    .inline-pay-section { margin-top: 16px; padding-top: 14px; border-top: 2px dashed rgba(0,0,0,0.15); }
 </style>
 
 <!-- Processing overlay -->
@@ -151,69 +152,6 @@
     <div class="processing-box">
         <div class="spinner-border" role="status"></div>
         <p>Processing scan...</p>
-    </div>
-</div>
-
-<!-- Payment Modal -->
-<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-            <div class="modal-header" style="background: linear-gradient(135deg,#f59e0b,#d97706); border-radius:16px 16px 0 0; border:none;">
-                <h5 class="modal-title text-white fw-bold" id="paymentModalLabel">
-                    <i class="fas fa-receipt me-2"></i>Collect Payment
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <!-- Trip summary -->
-                <div class="mb-3">
-                    <div class="pay-info-row">
-                        <span class="pay-info-label"><i class="fas fa-car me-1"></i> Vehicle</span>
-                        <span class="pay-info-value" id="payVehicle">—</span>
-                    </div>
-                    <div class="pay-info-row">
-                        <span class="pay-info-label"><i class="fas fa-parking me-1"></i> Slot</span>
-                        <span class="pay-info-value" id="paySlot">—</span>
-                    </div>
-                    <div class="pay-info-row">
-                        <span class="pay-info-label"><i class="fas fa-clock me-1"></i> Duration</span>
-                        <span class="pay-info-value" id="payDuration">—</span>
-                    </div>
-                    <div class="pay-info-row">
-                        <span class="pay-info-label"><i class="fas fa-rupee-sign me-1"></i> Amount Due</span>
-                        <span class="pay-info-value text-danger fs-5" id="payAmount">—</span>
-                    </div>
-                    <div class="pay-info-row">
-                        <span class="pay-info-label"><i class="fas fa-wallet me-1"></i> User Wallet</span>
-                        <span class="pay-info-value text-success" id="payWallet">—</span>
-                    </div>
-                </div>
-
-                <!-- Shortfall warning -->
-                <div class="shortfall-alert d-none" id="payShortfallAlert">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Insufficient wallet balance!</strong>
-                    Shortfall: <span id="payShortfallAmt" class="fw-bold">—</span>.
-                    Use Cash or UPI instead.
-                </div>
-
-                <!-- Payment buttons -->
-                <div class="d-grid gap-2 mt-3" id="payButtons">
-                    <button id="btnPayWallet" class="btn btn-primary pay-btn" onclick="submitPayment('wallet')">
-                        <i class="fas fa-wallet me-2"></i>Pay from Wallet
-                    </button>
-                    <button id="btnPayCash" class="btn btn-success pay-btn" onclick="submitPayment('cash')">
-                        <i class="fas fa-money-bill-wave me-2"></i>Mark as Cash
-                    </button>
-                    <button id="btnPayUpi" class="btn btn-info text-white pay-btn" onclick="submitPayment('upi')">
-                        <i class="fas fa-mobile-alt me-2"></i>Mark as UPI
-                    </button>
-                </div>
-
-                <!-- Result after payment -->
-                <div class="pay-result" id="payResult"></div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -311,6 +249,27 @@
             <div class="result-message" id="resultMessage"></div>
             <div class="result-details" id="resultDetails"></div>
         </div>
+        <!-- Inline payment section (shown only for checkout_pending) -->
+        <div class="inline-pay-section" id="inlinePaySection" style="display:none;">
+            <div id="inlinePayInfo"></div>
+            <div id="inlineShortfallAlert" class="shortfall-alert d-none mt-2">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Insufficient wallet balance!</strong>
+                Shortfall: <span id="inlineShortfallAmt" class="fw-bold">—</span>. Use Cash or UPI instead.
+            </div>
+            <div class="d-grid gap-2 mt-3" id="inlinePayButtons">
+                <button id="btnInlineWallet" class="btn btn-primary pay-btn" onclick="payInvoice('wallet')">
+                    <i class="fas fa-wallet me-2"></i>Pay from Wallet
+                </button>
+                <button id="btnInlineCash" class="btn btn-success pay-btn" onclick="payInvoice('cash')">
+                    <i class="fas fa-money-bill-wave me-2"></i>Collect Cash
+                </button>
+                <button id="btnInlineUpi" class="btn btn-info text-white pay-btn" onclick="payInvoice('upi')">
+                    <i class="fas fa-mobile-alt me-2"></i>Collect UPI
+                </button>
+            </div>
+            <div class="pay-result" id="inlinePayResult"></div>
+        </div>
     </div>
 </div>
 
@@ -364,95 +323,8 @@
     let html5QrCode = null;
     let scannerRunning = false;
 
-    // ============ Payment Modal State ============
+    // ============ Inline Payment State ============
     let currentInvoiceId = null;
-    let paymentModal = null;
-
-    document.addEventListener('DOMContentLoaded', () => {
-        paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
-    });
-
-    function openPaymentModal(result) {
-        currentInvoiceId = result.invoice_id;
-
-        document.getElementById('payVehicle').textContent = result.vehicle_number || '—';
-        document.getElementById('paySlot').textContent = result.slot_number || '—';
-        document.getElementById('payDuration').textContent = result.duration || '—';
-        document.getElementById('payAmount').textContent = '₹' + (result.amount_due || 0).toFixed(2);
-        document.getElementById('payWallet').textContent = '₹' + (result.user_wallet_balance || 0).toFixed(2);
-
-        const shortfallAlert = document.getElementById('payShortfallAlert');
-        const btnWallet = document.getElementById('btnPayWallet');
-
-        if (result.shortfall > 0) {
-            shortfallAlert.classList.remove('d-none');
-            document.getElementById('payShortfallAmt').textContent = '₹' + result.shortfall.toFixed(2);
-            btnWallet.disabled = true;
-            btnWallet.classList.add('opacity-50');
-        } else {
-            shortfallAlert.classList.add('d-none');
-            btnWallet.disabled = false;
-            btnWallet.classList.remove('opacity-50');
-        }
-
-        // Reset result area & re-show buttons
-        document.getElementById('payResult').className = 'pay-result';
-        document.getElementById('payResult').innerHTML = '';
-        document.getElementById('payButtons').style.display = '';
-
-        paymentModal.show();
-    }
-
-    async function submitPayment(method) {
-        if (!currentInvoiceId) return;
-
-        const btns = document.querySelectorAll('.pay-btn');
-        btns.forEach(b => { b.disabled = true; });
-
-        const resultDiv = document.getElementById('payResult');
-        resultDiv.className = 'pay-result';
-        resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
-        resultDiv.classList.add('show');
-        resultDiv.style.background = '#f1f5f9';
-
-        try {
-            const resp = await fetch('/watchman/invoice/pay/' + currentInvoiceId, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': CSRF_TOKEN
-                },
-                body: JSON.stringify({ payment_method: method })
-            });
-            const data = await resp.json();
-
-            if (data.success) {
-                resultDiv.style.background = '#d1fae5';
-                resultDiv.style.border = '1px solid #6ee7b7';
-                resultDiv.style.color = '#064e3b';
-                resultDiv.innerHTML = `<i class="fas fa-check-circle me-2 text-success"></i><strong>${escapeHtml(data.message)}</strong>`;
-                document.getElementById('payButtons').style.display = 'none';
-                // Auto-close modal after 2.5s
-                setTimeout(() => { paymentModal.hide(); loadRecentScans(); }, 2500);
-            } else {
-                resultDiv.style.background = '#fef2f2';
-                resultDiv.style.border = '1px solid #fecaca';
-                resultDiv.style.color = '#991b1b';
-                resultDiv.innerHTML = `<i class="fas fa-times-circle me-2 text-danger"></i><strong>${escapeHtml(data.message || 'Payment failed.')}</strong>`;
-                btns.forEach(b => { b.disabled = false; });
-                // Re-disable wallet btn if still insufficient
-                if (data.shortfall) {
-                    document.getElementById('btnPayWallet').disabled = true;
-                }
-            }
-        } catch (err) {
-            resultDiv.style.background = '#fef2f2';
-            resultDiv.style.border = '1px solid #fecaca';
-            resultDiv.style.color = '#991b1b';
-            resultDiv.innerHTML = '<i class="fas fa-times-circle me-2 text-danger"></i><strong>Network error. Please try again.</strong>';
-            btns.forEach(b => { b.disabled = false; });
-        }
-    }
 
     // ============ TAB SWITCHING ============
     function switchTab(tab) {
@@ -608,8 +480,12 @@
         const action = document.getElementById('resultAction');
         const message = document.getElementById('resultMessage');
         const details = document.getElementById('resultDetails');
+        const inlineSection = document.getElementById('inlinePaySection');
 
+        // Reset
         card.className = 'result-card show';
+        inlineSection.style.display = 'none';
+        currentInvoiceId = null;
 
         if (result.success && result.action === 'checkin') {
             card.classList.add('result-card-checkin');
@@ -632,7 +508,7 @@
             setTimeout(() => hideResult(), 8000);
 
         } else if (result.success && result.action === 'checkout_pending') {
-            // Payment required — show result card briefly, then open modal
+            // Payment required — show inline payment controls in the result card
             card.classList.add('result-card-pending');
             icon.innerHTML = '<i class="fas fa-cash-register" style="color:#d97706;"></i>';
             action.textContent = '🟡 CHECKOUT — COLLECT PAYMENT';
@@ -640,8 +516,50 @@
             details.innerHTML = `
                 <div><i class="fas fa-clock"></i> Duration: <strong>${escapeHtml(result.duration || '')}</strong></div>
                 <div><i class="fas fa-rupee-sign"></i> Amount Due: <strong>₹${(result.amount_due || 0).toFixed(2)}</strong></div>`;
-            // Open payment modal immediately
-            openPaymentModal(result);
+
+            // Populate inline payment section
+            currentInvoiceId = result.invoice_id;
+            const payInfo = document.getElementById('inlinePayInfo');
+            payInfo.innerHTML = `
+                <div class="pay-info-row">
+                    <span class="pay-info-label"><i class="fas fa-car me-1"></i> Vehicle</span>
+                    <span class="pay-info-value">${escapeHtml(result.vehicle_number || '—')}</span>
+                </div>
+                <div class="pay-info-row">
+                    <span class="pay-info-label"><i class="fas fa-parking me-1"></i> Slot</span>
+                    <span class="pay-info-value">${escapeHtml(result.slot_number || '—')}</span>
+                </div>
+                <div class="pay-info-row">
+                    <span class="pay-info-label"><i class="fas fa-rupee-sign me-1"></i> Amount Due</span>
+                    <span class="pay-info-value text-danger fs-5">₹${(result.amount_due || 0).toFixed(2)}</span>
+                </div>
+                <div class="pay-info-row">
+                    <span class="pay-info-label"><i class="fas fa-wallet me-1"></i> User Wallet</span>
+                    <span class="pay-info-value text-success">₹${(result.user_wallet_balance || 0).toFixed(2)}</span>
+                </div>`;
+
+            // Shortfall handling
+            const shortfallAlert = document.getElementById('inlineShortfallAlert');
+            const btnWallet = document.getElementById('btnInlineWallet');
+            if (result.shortfall > 0) {
+                shortfallAlert.classList.remove('d-none');
+                document.getElementById('inlineShortfallAmt').textContent = '₹' + result.shortfall.toFixed(2);
+                btnWallet.disabled = true;
+                btnWallet.classList.add('opacity-50');
+            } else {
+                shortfallAlert.classList.add('d-none');
+                btnWallet.disabled = false;
+                btnWallet.classList.remove('opacity-50');
+            }
+
+            // Reset pay result & show buttons
+            const payResult = document.getElementById('inlinePayResult');
+            payResult.className = 'pay-result';
+            payResult.innerHTML = '';
+            document.getElementById('inlinePayButtons').style.display = '';
+
+            inlineSection.style.display = 'block';
+            // Do NOT auto-hide for pending — user must complete payment
 
         } else {
             card.classList.add('result-card-error');
@@ -653,8 +571,66 @@
         }
     }
 
+    // ============ INLINE PAYMENT ============
+    async function payInvoice(method) {
+        if (!currentInvoiceId) return;
+
+        const btns = document.querySelectorAll('#inlinePayButtons .pay-btn');
+        btns.forEach(b => { b.disabled = true; });
+
+        const resultDiv = document.getElementById('inlinePayResult');
+        resultDiv.className = 'pay-result show';
+        resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        resultDiv.style.background = '#f1f5f9';
+        resultDiv.style.border = '1px solid #e2e8f0';
+        resultDiv.style.color = '#475569';
+
+        try {
+            const resp = await fetch('/watchman/invoice/pay/' + currentInvoiceId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN
+                },
+                body: JSON.stringify({ payment_method: method })
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+                resultDiv.style.background = '#d1fae5';
+                resultDiv.style.border = '1px solid #6ee7b7';
+                resultDiv.style.color = '#064e3b';
+                resultDiv.innerHTML = `<i class="fas fa-check-circle me-2 text-success"></i><strong>${escapeHtml(data.message)}</strong>`;
+                document.getElementById('inlinePayButtons').style.display = 'none';
+                // Refresh stats and logs on success
+                refreshStats();
+                loadRecentScans();
+                // Auto-hide after 5 seconds
+                setTimeout(() => hideResult(), 5000);
+            } else {
+                resultDiv.style.background = '#fef2f2';
+                resultDiv.style.border = '1px solid #fecaca';
+                resultDiv.style.color = '#991b1b';
+                resultDiv.innerHTML = `<i class="fas fa-times-circle me-2 text-danger"></i><strong>${escapeHtml(data.message || 'Payment failed.')}</strong>`;
+                btns.forEach(b => { b.disabled = false; });
+                // Re-disable wallet if still insufficient
+                if (data.shortfall) {
+                    document.getElementById('btnInlineWallet').disabled = true;
+                }
+            }
+        } catch (err) {
+            resultDiv.style.background = '#fef2f2';
+            resultDiv.style.border = '1px solid #fecaca';
+            resultDiv.style.color = '#991b1b';
+            resultDiv.innerHTML = '<i class="fas fa-times-circle me-2 text-danger"></i><strong>Network error. Please try again.</strong>';
+            btns.forEach(b => { b.disabled = false; });
+        }
+    }
+
     function hideResult() {
         document.getElementById('resultCard').className = 'result-card';
+        document.getElementById('inlinePaySection').style.display = 'none';
+        currentInvoiceId = null;
     }
 
     let processingTimeout = null;

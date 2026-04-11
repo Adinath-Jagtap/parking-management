@@ -78,11 +78,8 @@
                             </td>
                             <td>
                                 {% if booking.status == 'active' %}
-                                    <a href="{{ url_for('exit_booking', booking_id=booking._id) }}"
-                                       class="btn btn-sm btn-danger"
-                                       onclick="return confirm('Complete parking and generate invoice?')">
-                                        <i class="fas fa-sign-out-alt"></i> Exit
-                                    </a>
+                                    <span class="badge bg-success"><i class="fas fa-car"></i> Parked</span>
+                                    <br><small class="text-muted">Show QR to watchman to exit</small>
 
                                 {% elif booking.status == 'reserved' %}
                                     {% set hours_until = ((booking.booked_start - now).total_seconds() / 3600) %}

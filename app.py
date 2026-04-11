@@ -187,8 +187,6 @@ class ParkingSlotForm(FlaskForm):
     slot_type = SelectField('Slot Type', choices=[('2-wheeler', '2-Wheeler'), ('4-wheeler', '4-Wheeler')], validators=[DataRequired()])
     price_per_hour = FloatField('Price per Hour', validators=[DataRequired(), NumberRange(min=0)])
 
-class BookingForm(FlaskForm):
-    vehicle_id = SelectField('Select Vehicle', validators=[DataRequired()])
 
 class PreBookingForm(FlaskForm):
     vehicle_id = SelectField('Select Vehicle', validators=[DataRequired()])
@@ -475,6 +473,8 @@ def parking_lots():
         available_slots = parking_slots_collection.count_documents({'lot_id': lot['_id'], 'status': 'available'})
         lot['total_slots'] = total_slots
         lot['available_slots'] = available_slots
+        lot['walkin_slots'] = parking_slots_collection.count_documents({'lot_id': lot['_id'], 'mode': 'walkin'})
+        lot['prebook_slots'] = parking_slots_collection.count_documents({'lot_id': lot['_id'], 'mode': 'prebook'})
         lot['admin'] = users_collection.find_one({'_id': lot['admin_id']})
     
     total_pages = (total + per_page - 1) // per_page
@@ -600,6 +600,15 @@ def delete_vehicle(vehicle_id):
             flash('Cannot delete vehicle while it is parked. Please check out first.', 'danger')
             return redirect(url_for('my_vehicles'))
         
+        # Block deletion if vehicle has any reserved (pre-booked) booking
+        reserved_booking = bookings_collection.find_one({
+            'vehicle_id': vehicle['_id'],
+            'status': 'reserved'
+        })
+        if reserved_booking:
+            flash('Cannot delete vehicle with an active pre-booking. Please cancel the pre-booking first.', 'danger')
+            return redirect(url_for('my_vehicles'))
+        
         vehicles_collection.delete_one({'_id': vehicle['_id']})
         flash('Vehicle deleted successfully!', 'success')
     except Exception as e:
@@ -608,103 +617,6 @@ def delete_vehicle(vehicle_id):
     
     return redirect(url_for('my_vehicles'))
 
-@app.route('/user/book-slot/<lot_id>', methods=['GET', 'POST'])
-@login_required
-@role_required('user')
-def book_slot(lot_id):
-    lot = parking_lots_collection.find_one({'_id': ObjectId(lot_id)})
-    if not lot:
-        flash('Parking lot not found.', 'danger')
-        return redirect(url_for('parking_lots'))
-    
-    form = BookingForm()
-    
-    vehicles = list(vehicles_collection.find({'user_id': ObjectId(current_user.id)}))
-    form.vehicle_id.choices = [(str(v['_id']), f"{v['vehicle_number']} ({v['vehicle_type']})") for v in vehicles]
-    
-    if not vehicles:
-        flash('Please add a vehicle before booking.', 'warning')
-        return redirect(url_for('my_vehicles'))
-    
-    if form.validate_on_submit():
-        try:
-            vehicle = vehicles_collection.find_one({'_id': ObjectId(form.vehicle_id.data)})
-            
-            # Rule 1: One active booking per vehicle (global)
-            active_exists = bookings_collection.find_one({
-                'vehicle_id': vehicle['_id'],
-                'status': 'active'
-            })
-            if active_exists:
-                flash('This vehicle is already parked. Please check out first.', 'danger')
-                return redirect(url_for('book_slot', lot_id=lot_id))
-            
-            available_slot = parking_slots_collection.find_one({
-                'lot_id': ObjectId(lot_id),
-                'slot_type': vehicle['vehicle_type'],
-                'mode': {'$in': ['walkin', None]},
-                'status': 'available'
-            })
-            
-            if not available_slot:
-                flash('No available slots for your vehicle type.', 'danger')
-                return redirect(url_for('book_slot', lot_id=lot_id))
-            
-            booking_data = {
-                'user_id': ObjectId(current_user.id),
-                'slot_id': available_slot['_id'],
-                'vehicle_id': vehicle['_id'],
-                'lot_id': ObjectId(lot_id),
-                'entry_time': datetime.now(),
-                'exit_time': None,
-                'status': 'active',
-                'checked_in_lot_id': ObjectId(lot_id),
-                'created_at': datetime.now()
-            }
-            
-            bookings_collection.insert_one(booking_data)
-            
-            parking_slots_collection.update_one(
-                {'_id': available_slot['_id']},
-                {'$set': {'status': 'occupied'}}
-            )
-            
-            # Mark vehicle as currently parked
-            vehicles_collection.update_one(
-                {'_id': vehicle['_id']},
-                {'$set': {'currently_parked': True}}
-            )
-            
-            flash('Slot booked successfully!', 'success')
-            logger.info(f'Booking created: User {current_user.email}, Slot {available_slot["slot_number"]}')
-            return redirect(url_for('my_bookings'))
-        except Exception as e:
-            logger.error(f'Booking error: {str(e)}')
-            flash('Booking failed. Please try again.', 'danger')
-    
-    available_slots = parking_slots_collection.count_documents({
-        'lot_id': ObjectId(lot_id),
-        'status': 'available'
-    })
-    
-    slots_2w = parking_slots_collection.count_documents({
-        'lot_id': ObjectId(lot_id),
-        'slot_type': '2-wheeler',
-        'status': 'available'
-    })
-    
-    slots_4w = parking_slots_collection.count_documents({
-        'lot_id': ObjectId(lot_id),
-        'slot_type': '4-wheeler',
-        'status': 'available'
-    })
-    
-    return render_template('user/book_slot.html',
-                         form=form,
-                         lot=lot,
-                         available_slots=available_slots,
-                         slots_2w=slots_2w,
-                         slots_4w=slots_4w)
 
 @app.route('/user/bookings')
 @login_required
@@ -731,60 +643,6 @@ def my_bookings():
                          total_pages=total_pages,
                          now=datetime.now())
 
-@app.route('/user/booking/exit/<booking_id>')
-@login_required
-@role_required('user')
-def exit_booking(booking_id):
-    try:
-        booking = bookings_collection.find_one({
-            '_id': ObjectId(booking_id),
-            'user_id': ObjectId(current_user.id),
-            'status': 'active'
-        })
-        
-        if not booking:
-            flash('Booking not found or already completed.', 'danger')
-            return redirect(url_for('my_bookings'))
-        
-        exit_time = datetime.now()
-        slot = parking_slots_collection.find_one({'_id': booking['slot_id']})
-        
-        amount = calculate_parking_fee(booking['entry_time'], exit_time, slot['price_per_hour'])
-        
-        bookings_collection.update_one(
-            {'_id': booking['_id']},
-            {'$set': {'exit_time': exit_time, 'status': 'completed'}}
-        )
-        
-        parking_slots_collection.update_one(
-            {'_id': slot['_id']},
-            {'$set': {'status': 'available'}}
-        )
-        
-        # Clear currently_parked flag on vehicle
-        vehicles_collection.update_one(
-            {'_id': booking['vehicle_id']},
-            {'$set': {'currently_parked': False}}
-        )
-        
-        invoice_data = {
-            'booking_id': booking['_id'],
-            'user_id': booking['user_id'],
-            'invoice_number': generate_invoice_number(),
-            'amount': amount,
-            'payment_status': 'paid',
-            'generated_at': datetime.now()
-        }
-        
-        invoices_collection.insert_one(invoice_data)
-        
-        flash(f'Parking completed! Invoice generated. Amount: ₹{amount}', 'success')
-        logger.info(f'Booking completed: {booking_id}')
-        return redirect(url_for('invoices'))
-    except Exception as e:
-        logger.error(f'Exit booking error: {str(e)}')
-        flash('Failed to complete booking.', 'danger')
-        return redirect(url_for('my_bookings'))
 
 @app.route('/user/invoices')
 @login_required
@@ -822,9 +680,8 @@ def user_profile():
     if request.method == 'POST':
         try:
             name = request.form.get('name', '').strip()
-            language = request.form.get('language', 'en')
             
-            update_data = {'name': name, 'language': language}
+            update_data = {'name': name}
             
             if 'profile_image' in request.files:
                 file = request.files['profile_image']
@@ -1059,9 +916,9 @@ def wallet_topup_verify():
         # Verify Razorpay signature
         message = f'{razorpay_order_id}|{razorpay_payment_id}'
         generated_signature = hmac.new(
-            key=app.config['RAZORPAY_KEY_SECRET'].encode(),
-            msg=message.encode(),
-            digestmod=hashlib.sha256
+            app.config['RAZORPAY_KEY_SECRET'].encode(),
+            message.encode(),
+            hashlib.sha256
         ).hexdigest()
         
         if generated_signature != razorpay_signature:
@@ -1090,6 +947,7 @@ def wallet_topup_verify():
 
 # Fee Estimation API
 @app.route('/api/estimate-fee/<lot_id>')
+@login_required
 def estimate_fee_api(lot_id):
     try:
         lot = parking_lots_collection.find_one({'_id': ObjectId(lot_id)})
@@ -1515,10 +1373,14 @@ def add_slot(lot_id):
             flash('Parking lot not found.', 'danger')
             return redirect(url_for('manage_slots'))
         
+        mode_val = request.form.get('mode', 'walkin').strip()
+        if mode_val not in ('walkin', 'prebook'):
+            mode_val = 'walkin'
         slot_data = {
             'lot_id': ObjectId(lot_id),
             'slot_number': request.form.get('slot_number', '').strip(),
             'slot_type': request.form.get('slot_type'),
+            'mode': mode_val,
             'price_per_hour': float(request.form.get('price_per_hour', 0)),
             'status': 'available',
             'created_at': datetime.now()
@@ -1739,9 +1601,8 @@ def admin_profile():
     if request.method == 'POST':
         try:
             name = request.form.get('name', '').strip()
-            language = request.form.get('language', 'en')
             
-            update_data = {'name': name, 'language': language}
+            update_data = {'name': name}
             
             if 'profile_image' in request.files:
                 file = request.files['profile_image']
@@ -2761,6 +2622,108 @@ def watchman_scan_qr():
         
         else:
             # CHECK-IN LOGIC
+            now = datetime.now()
+
+            # --- Pre-book arrival handling ---
+            # Look for a reserved booking for this vehicle at this lot
+            reserved_booking = bookings_collection.find_one({
+                'vehicle_id': vehicle['_id'],
+                'lot_id': watchman_lot_id,
+                'status': 'reserved'
+            })
+            if reserved_booking:
+                booked_start = reserved_booking['booked_start']
+                booked_end = reserved_booking['booked_end']
+                earliest_allowed = booked_start - timedelta(minutes=15)
+
+                if now < earliest_allowed:
+                    # Too early — more than 15 mins before window
+                    scan_logs_collection.insert_one({
+                        'watchman_id': ObjectId(current_user.id),
+                        'lot_id': watchman_lot_id,
+                        'vehicle_id': vehicle['_id'],
+                        'action': 'checkin_denied',
+                        'result_message': f'Pre-booked vehicle arrived too early. Window starts at {booked_start.strftime("%H:%M")}',
+                        'timestamp': now
+                    })
+                    return jsonify({
+                        'success': False,
+                        'message': f'Pre-booked slot window starts at {booked_start.strftime("%H:%M")}. You may arrive up to 15 minutes early.'
+                    })
+
+                if now > booked_end:
+                    # Window has fully passed — reject
+                    scan_logs_collection.insert_one({
+                        'watchman_id': ObjectId(current_user.id),
+                        'lot_id': watchman_lot_id,
+                        'vehicle_id': vehicle['_id'],
+                        'action': 'checkin_denied',
+                        'result_message': f'Pre-booked window expired at {booked_end.strftime("%H:%M")}',
+                        'timestamp': now
+                    })
+                    return jsonify({
+                        'success': False,
+                        'message': f'Pre-booked parking window has expired (ended at {booked_end.strftime("%H:%M")}). Please book again.'
+                    })
+
+                # Valid arrival window — activate the reserved booking on its pre-assigned slot
+                reserved_slot = parking_slots_collection.find_one({'_id': reserved_booking['slot_id']})
+                if not reserved_slot or reserved_slot.get('status') == 'occupied':
+                    scan_logs_collection.insert_one({
+                        'watchman_id': ObjectId(current_user.id),
+                        'lot_id': watchman_lot_id,
+                        'vehicle_id': vehicle['_id'],
+                        'action': 'checkin_denied',
+                        'result_message': 'Pre-booked slot is unexpectedly occupied',
+                        'timestamp': now
+                    })
+                    return jsonify({
+                        'success': False,
+                        'message': 'Pre-booked slot is currently unavailable. Please contact support.'
+                    })
+
+                # Activate the booking
+                bookings_collection.update_one(
+                    {'_id': reserved_booking['_id']},
+                    {'$set': {
+                        'status': 'active',
+                        'entry_time': now,
+                        'checked_in_by_watchman_id': ObjectId(current_user.id)
+                    }}
+                )
+                parking_slots_collection.update_one(
+                    {'_id': reserved_slot['_id']},
+                    {'$set': {'status': 'occupied'}}
+                )
+                vehicles_collection.update_one(
+                    {'_id': vehicle['_id']},
+                    {'$set': {'currently_parked': True}}
+                )
+
+                # Cancel the no-show scheduler job
+                try:
+                    scheduler.remove_job(f'noshow_{reserved_booking["_id"]}')
+                except Exception:
+                    pass
+
+                scan_logs_collection.insert_one({
+                    'watchman_id': ObjectId(current_user.id),
+                    'lot_id': watchman_lot_id,
+                    'vehicle_id': vehicle['_id'],
+                    'action': 'checkin',
+                    'result_message': f'Pre-booked check-in at slot {reserved_slot["slot_number"]}',
+                    'timestamp': now
+                })
+
+                logger.info(f'Watchman pre-book checkin: Vehicle {vehicle_number}, Slot {reserved_slot["slot_number"]}')
+                return jsonify({
+                    'success': True,
+                    'action': 'checkin',
+                    'slot_number': reserved_slot['slot_number'],
+                    'message': f'Vehicle {vehicle_number} checked in (pre-booked) at slot {reserved_slot["slot_number"]}'
+                })
+
+            # --- Walk-in check-in logic ---
             # Rule 2: Atomic currently_parked lock to prevent race conditions
             lock_result = vehicles_collection.find_one_and_update(
                 {'_id': vehicle['_id'], 'currently_parked': {'$ne': True}},
@@ -2782,17 +2745,18 @@ def watchman_scan_qr():
                     'vehicle_id': vehicle['_id'],
                     'action': 'checkin_denied',
                     'result_message': f'Vehicle already parked at {parked_lot_name}',
-                    'timestamp': datetime.now()
+                    'timestamp': now
                 })
                 return jsonify({
                     'success': False,
                     'message': f'Vehicle is already parked at {parked_lot_name}. It must be checked out there first.'
                 })
             
-            # Find available slot matching vehicle type
+            # Find available WALKIN slot matching vehicle type (never assign prebook slots for walk-ins)
             available_slot = parking_slots_collection.find_one({
                 'lot_id': watchman_lot_id,
                 'slot_type': vehicle['vehicle_type'],
+                'mode': 'walkin',
                 'status': 'available'
             })
             
@@ -2807,26 +2771,27 @@ def watchman_scan_qr():
                     'lot_id': watchman_lot_id,
                     'vehicle_id': vehicle['_id'],
                     'action': 'checkin_denied',
-                    'result_message': f'No available {vehicle["vehicle_type"]} slots',
-                    'timestamp': datetime.now()
+                    'result_message': f'No available walkin {vehicle["vehicle_type"]} slots',
+                    'timestamp': now
                 })
                 return jsonify({
                     'success': False,
-                    'message': f'No available {vehicle["vehicle_type"]} slots in this lot.'
+                    'message': f'No available walk-in {vehicle["vehicle_type"]} slots in this lot.'
                 })
             
-            # Create booking
+            # Create walk-in booking
             booking_data = {
                 'user_id': vehicle['user_id'],
                 'slot_id': available_slot['_id'],
                 'vehicle_id': vehicle['_id'],
                 'lot_id': watchman_lot_id,
-                'entry_time': datetime.now(),
+                'booking_type': 'walkin',
+                'entry_time': now,
                 'exit_time': None,
                 'status': 'active',
                 'checked_in_by_watchman_id': ObjectId(current_user.id),
                 'checked_in_lot_id': watchman_lot_id,
-                'created_at': datetime.now()
+                'created_at': now
             }
             bookings_collection.insert_one(booking_data)
             
@@ -2841,7 +2806,7 @@ def watchman_scan_qr():
                 'vehicle_id': vehicle['_id'],
                 'action': 'checkin',
                 'result_message': f'Checked in at slot {available_slot["slot_number"]}',
-                'timestamp': datetime.now()
+                'timestamp': now
             })
             
             logger.info(f'Watchman checkin: Vehicle {vehicle_number}, Slot {available_slot["slot_number"]}')
@@ -3009,6 +2974,7 @@ def watchman_collections():
                 'method': c['method'],
                 'vehicle_number': c['vehicle_number'],
                 'invoice_number': c['invoice_number'],
+                'invoice_id': str(c['invoice_id']) if c.get('invoice_id') else '',
                 'collected_at': c['collected_at'].strftime('%Y-%m-%d %H:%M:%S')
             } for c in collections]
         })
@@ -3188,19 +3154,42 @@ def inject_wallet_balance():
             logger.error(f"Context processor error: {str(e)}")
     return dict(wallet_balance=balance)
 
-@app.route('/user/pre-book')
-@login_required
-@role_required('user')
-def user_pre_book():
-    flash('Generic pre-booking list or view is not yet implemented.', 'info')
-    return "<h4>404 Not Found</h4><p>Route not yet implemented.</p>", 404
-
 @app.route('/super-admin/unpaid-invoices')
 @login_required
 @role_required('super_admin')
 def super_admin_unpaid_invoices():
-    flash('Super admin unpaid invoices view is not yet implemented.', 'info')
-    return "<h4>404 Not Found</h4><p>Route not yet implemented.</p>", 404
+    try:
+        one_hour_ago = datetime.now() - timedelta(hours=1)
+        pending_raw = list(invoices_collection.find({
+            'payment_status': {'$in': ['pending', 'unpaid']},
+            'generated_at': {'$lt': one_hour_ago}
+        }).sort('generated_at', ASCENDING))
+
+        invoices_enriched = []
+        for inv in pending_raw:
+            booking = bookings_collection.find_one({'_id': inv['booking_id']})
+            slot = parking_slots_collection.find_one({'_id': booking['slot_id']}) if booking else None
+            lot = parking_lots_collection.find_one({'_id': slot['lot_id']}) if slot else None
+            vehicle = vehicles_collection.find_one({'_id': booking['vehicle_id']}) if booking else None
+            user = users_collection.find_one({'_id': inv['user_id']})
+            age_hours = round((datetime.now() - inv['generated_at']).total_seconds() / 3600, 1)
+            invoices_enriched.append({
+                '_id': inv['_id'],
+                'invoice_number': inv.get('invoice_number', ''),
+                'amount': inv['amount'],
+                'generated_at': inv['generated_at'],
+                'age_hours': age_hours,
+                'booking': booking,
+                'lot': lot,
+                'vehicle': vehicle,
+                'user': user
+            })
+
+        return render_template('super_admin/unpaid_invoices.html', invoices=invoices_enriched)
+    except Exception as e:
+        logger.error(f'Unpaid invoices error: {str(e)}')
+        flash('Failed to load unpaid invoices.', 'danger')
+        return redirect(url_for('super_admin_dashboard'))
 
 if __name__ == '__main__':
     create_super_admin()
