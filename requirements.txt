@@ -3,11 +3,12 @@ Flask-WTF==1.2.1
 Flask-Bcrypt==1.0.1
 Flask-Login==0.6.3
 Flask-Limiter==3.5.0
-Flask-Babel==4.0.0
 pymongo==4.6.1
 python-dotenv==1.0.0
 WTForms==3.1.1
 email-validator==2.1.0
-gunicorn==21.2.0
 Werkzeug==3.0.1
 qrcode[pil]==7.4.2
+razorpay==1.4.2
+APScheduler==3.10.4
+gunicorn==21.2.0
