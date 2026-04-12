@@ -1,179 +1,141 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Slots - Parking Management{% endblock %}
+{% block title %}Manage Slots - ParkEasy{% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="fas fa-parking"></i> Manage Parking Lots & Slots</h2>
+<h2 class="pk-page-title fade-in"><i class="fas fa-parking"></i> Manage Parking Lots & Slots</h2>
 
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-plus"></i> Create New Parking Lot</h5>
+<div class="card mb-4 fade-in" style="border-top:3px solid var(--pk-primary);">
+    <div class="card-header pk-card-header-orange">
+        <h6 class="mb-0 fw-bold"><i class="fas fa-plus me-2"></i>Create New Parking Lot</h6>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('manage_slots') }}">
+            {{ lot_form.hidden_tag() }}
+            <input type="hidden" name="create_lot" value="1">
+            
+            <div class="row mb-3 g-3">
+                <div class="col-md-4">
+                    {{ lot_form.name.label(class="form-label") }}
+                    {{ lot_form.name(class="form-control" + (" is-invalid" if lot_form.name.errors else "")) }}
+                    {% if lot_form.name.errors %}<div class="invalid-feedback d-block">{% for error in lot_form.name.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    {{ lot_form.address.label(class="form-label") }}
+                    {{ lot_form.address(class="form-control" + (" is-invalid" if lot_form.address.errors else "")) }}
+                    {% if lot_form.address.errors %}<div class="invalid-feedback d-block">{% for error in lot_form.address.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    {{ lot_form.pincode.label(class="form-label") }}
+                    {{ lot_form.pincode(class="form-control" + (" is-invalid" if lot_form.pincode.errors else "")) }}
+                    {% if lot_form.pincode.errors %}<div class="invalid-feedback d-block">{% for error in lot_form.pincode.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                </div>
             </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('manage_slots') }}">
-                    {{ lot_form.hidden_tag() }}
-                    <input type="hidden" name="create_lot" value="1">
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            {{ lot_form.name.label(class="form-label") }}
-                            {{ lot_form.name(class="form-control" + (" is-invalid" if lot_form.name.errors else "")) }}
-                            {% if lot_form.name.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in lot_form.name.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            {{ lot_form.address.label(class="form-label") }}
-                            {{ lot_form.address(class="form-control" + (" is-invalid" if lot_form.address.errors else "")) }}
-                            {% if lot_form.address.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in lot_form.address.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            {{ lot_form.pincode.label(class="form-label") }}
-                            {{ lot_form.pincode(class="form-control" + (" is-invalid" if lot_form.pincode.errors else "")) }}
-                            {% if lot_form.pincode.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in lot_form.pincode.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-3">
-                            {{ lot_form.two_wheeler_slots.label(class="form-label") }}
-                            {{ lot_form.two_wheeler_slots(class="form-control" + (" is-invalid" if lot_form.two_wheeler_slots.errors else ""), placeholder="e.g. 20") }}
-                            {% if lot_form.two_wheeler_slots.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in lot_form.two_wheeler_slots.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-3">
-                            {{ lot_form.two_wheeler_price.label(class="form-label") }}
-                            {{ lot_form.two_wheeler_price(class="form-control" + (" is-invalid" if lot_form.two_wheeler_price.errors else ""), placeholder="e.g. 10") }}
-                            {% if lot_form.two_wheeler_price.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in lot_form.two_wheeler_price.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-3">
-                            {{ lot_form.four_wheeler_slots.label(class="form-label") }}
-                            {{ lot_form.four_wheeler_slots(class="form-control" + (" is-invalid" if lot_form.four_wheeler_slots.errors else ""), placeholder="e.g. 10") }}
-                            {% if lot_form.four_wheeler_slots.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in lot_form.four_wheeler_slots.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-3">
-                            {{ lot_form.four_wheeler_price.label(class="form-label") }}
-                            {{ lot_form.four_wheeler_price(class="form-control" + (" is-invalid" if lot_form.four_wheeler_price.errors else ""), placeholder="e.g. 20") }}
-                            {% if lot_form.four_wheeler_price.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in lot_form.four_wheeler_price.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-3">
-                            {{ lot_form.walkin_ratio.label(class="form-label") }}
-                            {{ lot_form.walkin_ratio(class="form-control" + (" is-invalid" if lot_form.walkin_ratio.errors else ""), placeholder="e.g. 70") }}
-                            {% if lot_form.walkin_ratio.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in lot_form.walkin_ratio.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-3">
-                            {{ lot_form.prebook_ratio.label(class="form-label") }}
-                            {{ lot_form.prebook_ratio(class="form-control" + (" is-invalid" if lot_form.prebook_ratio.errors else ""), placeholder="e.g. 30") }}
-                            {% if lot_form.prebook_ratio.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in lot_form.prebook_ratio.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6 d-flex align-items-end">
-                            <div class="alert alert-info mb-0 py-2 px-3 w-100" style="font-size: 0.85em;">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Walk-in % + Pre-book % must equal <strong>100</strong>. Slots will be auto-split by this ratio.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-success w-100">
-                                <i class="fas fa-plus"></i> Create Lot
-                            </button>
-                        </div>
-                    </div>
-                </form>
+            <div class="row mb-3 g-3">
+                <div class="col-6 col-md-3">
+                    {{ lot_form.two_wheeler_slots.label(class="form-label") }}
+                    {{ lot_form.two_wheeler_slots(class="form-control" + (" is-invalid" if lot_form.two_wheeler_slots.errors else ""), placeholder="e.g. 20") }}
+                    {% if lot_form.two_wheeler_slots.errors %}<div class="invalid-feedback d-block">{% for error in lot_form.two_wheeler_slots.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                </div>
+                <div class="col-6 col-md-3">
+                    {{ lot_form.two_wheeler_price.label(class="form-label") }}
+                    {{ lot_form.two_wheeler_price(class="form-control" + (" is-invalid" if lot_form.two_wheeler_price.errors else ""), placeholder="e.g. 10") }}
+                    {% if lot_form.two_wheeler_price.errors %}<div class="invalid-feedback d-block">{% for error in lot_form.two_wheeler_price.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                </div>
+                <div class="col-6 col-md-3">
+                    {{ lot_form.four_wheeler_slots.label(class="form-label") }}
+                    {{ lot_form.four_wheeler_slots(class="form-control" + (" is-invalid" if lot_form.four_wheeler_slots.errors else ""), placeholder="e.g. 10") }}
+                    {% if lot_form.four_wheeler_slots.errors %}<div class="invalid-feedback d-block">{% for error in lot_form.four_wheeler_slots.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                </div>
+                <div class="col-6 col-md-3">
+                    {{ lot_form.four_wheeler_price.label(class="form-label") }}
+                    {{ lot_form.four_wheeler_price(class="form-control" + (" is-invalid" if lot_form.four_wheeler_price.errors else ""), placeholder="e.g. 20") }}
+                    {% if lot_form.four_wheeler_price.errors %}<div class="invalid-feedback d-block">{% for error in lot_form.four_wheeler_price.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                </div>
             </div>
-        </div>
+
+            <div class="row mb-3 g-3">
+                <div class="col-6 col-md-3">
+                    {{ lot_form.walkin_ratio.label(class="form-label") }}
+                    {{ lot_form.walkin_ratio(class="form-control" + (" is-invalid" if lot_form.walkin_ratio.errors else ""), placeholder="e.g. 70") }}
+                    {% if lot_form.walkin_ratio.errors %}<div class="invalid-feedback d-block">{% for error in lot_form.walkin_ratio.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                </div>
+                <div class="col-6 col-md-3">
+                    {{ lot_form.prebook_ratio.label(class="form-label") }}
+                    {{ lot_form.prebook_ratio(class="form-control" + (" is-invalid" if lot_form.prebook_ratio.errors else ""), placeholder="e.g. 30") }}
+                    {% if lot_form.prebook_ratio.errors %}<div class="invalid-feedback d-block">{% for error in lot_form.prebook_ratio.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                </div>
+                <div class="col-12 col-md-6 d-flex align-items-end">
+                    <div class="alert alert-info mb-0 py-2 px-3 w-100" style="font-size: 0.85em;">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Walk-in % + Pre-book % must equal <strong>100</strong>. Slots will be auto-split.
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-plus me-1"></i>Create Lot
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
 {% for lot in lots %}
-<div class="card mb-4">
-    <div class="card-header bg-info text-white">
-        <h5 class="mb-0">
-            <i class="fas fa-building"></i> {{ lot.name }}
-            <span class="badge bg-light text-dark float-end">{{ lot.slots|length }} Slots</span>
-        </h5>
+<div class="card mb-4 fade-in" style="border-left:4px solid var(--pk-primary);">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold">
+            <i class="fas fa-building me-2 text-pk-primary"></i>{{ lot.name }}
+        </h6>
+        <span class="badge bg-primary">{{ lot.slots|length }} Slots</span>
     </div>
     <div class="card-body">
-        <p><i class="fas fa-map-marker-alt"></i> {{ lot.address }} - {{ lot.pincode }}</p>
+        <p style="color:var(--pk-text-muted);"><i class="fas fa-map-marker-alt me-1"></i> {{ lot.address }} - {{ lot.pincode }}</p>
         
-        <button class="btn btn-sm btn-primary mb-3 me-2" data-bs-toggle="collapse" data-bs-target="#addSlot{{ loop.index }}">
-            <i class="fas fa-plus"></i> Add Slot
-        </button>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <button class="btn btn-sm btn-primary" data-bs-toggle="collapse" data-bs-target="#addSlot{{ loop.index }}">
+                <i class="fas fa-plus me-1"></i>Add Slot
+            </button>
 
-        {% if lot.watchman_username %}
-        <button class="btn btn-sm btn-outline-dark mb-3" data-bs-toggle="collapse" data-bs-target="#watchman{{ loop.index }}">
-            <i class="fas fa-user-shield"></i> Watchman Credentials
-        </button>
-        {% endif %}
+            {% if lot.watchman_username %}
+            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#watchman{{ loop.index }}">
+                <i class="fas fa-user-shield me-1"></i>Watchman Credentials
+            </button>
+            {% endif %}
+        </div>
         
         <div class="collapse" id="addSlot{{ loop.index }}">
-            <div class="card card-body mb-3">
+            <div class="card card-body mb-3" style="background:var(--pk-surface);border-color:var(--pk-border);">
                 <form method="POST" action="{{ url_for('add_slot', lot_id=lot._id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row g-2 align-items-end">
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-2">
                             <label class="form-label form-label-sm">Slot Number</label>
                             <input type="text" name="slot_number" class="form-control" placeholder="e.g. A21" required>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-2">
                             <label class="form-label form-label-sm">Type</label>
                             <select name="slot_type" class="form-select" required>
                                 <option value="2-wheeler">2-Wheeler</option>
                                 <option value="4-wheeler">4-Wheeler</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-6 col-md-2">
                             <label class="form-label form-label-sm">Mode</label>
                             <select name="mode" class="form-select" required>
                                 <option value="walkin">Walk-in</option>
                                 <option value="prebook">Pre-book</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-6 col-md-3">
                             <label class="form-label form-label-sm">Price/Hour (₹)</label>
                             <input type="number" step="0.01" name="price_per_hour" class="form-control" placeholder="e.g. 15" required>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-3">
                             <button type="submit" class="btn btn-success w-100">
                                 <i class="fas fa-plus me-1"></i>Add Slot
                             </button>
@@ -185,17 +147,15 @@
 
         {% if lot.watchman_username %}
         <div class="collapse" id="watchman{{ loop.index }}">
-            <div class="card card-body mb-3 border-warning">
-                <h6 class="mb-3"><i class="fas fa-user-shield"></i> Watchman Login Credentials</h6>
+            <div class="card card-body mb-3" style="background:var(--pk-secondary-light);border:2px solid var(--pk-secondary);">
+                <h6 class="mb-3 fw-bold"><i class="fas fa-user-shield me-2"></i>Watchman Login Credentials</h6>
                 <div class="row align-items-center mb-2">
-                    <div class="col-md-3"><strong>Username:</strong></div>
-                    <div class="col-md-9">
-                        <code>{{ lot.watchman_username }}</code>
-                    </div>
+                    <div class="col-4 col-md-3"><strong>Username:</strong></div>
+                    <div class="col-8 col-md-9"><code style="background:var(--pk-white);padding:4px 8px;border-radius:6px;">{{ lot.watchman_username }}</code></div>
                 </div>
                 <div class="row align-items-center mb-3">
-                    <div class="col-md-3"><strong>Password:</strong></div>
-                    <div class="col-md-9">
+                    <div class="col-4 col-md-3"><strong>Password:</strong></div>
+                    <div class="col-8 col-md-9">
                         <div class="input-group" style="max-width: 350px;">
                             <input type="password" class="form-control form-control-sm watchman-pwd" 
                                    value="{{ lot.watchman_plain_password }}" readonly>
@@ -206,8 +166,8 @@
                     </div>
                 </div>
                 <div class="alert alert-warning mb-0 py-2" style="font-size: 0.85em;">
-                    <i class="fas fa-exclamation-triangle"></i> 
-                    Share these credentials only with your designated lot watchman. Do not share publicly.
+                    <i class="fas fa-exclamation-triangle me-1"></i> 
+                    Share these credentials only with your designated lot watchman.
                 </div>
             </div>
         </div>
@@ -215,13 +175,13 @@
         
         {% if lot.slots %}
             <div class="table-responsive">
-                <table class="table table-sm table-striped">
+                <table class="table table-sm table-hover align-middle mb-0 table-responsive-cards">
                     <thead>
                         <tr>
-                            <th>Slot Number</th>
+                            <th>Slot #</th>
                             <th>Type</th>
                             <th>Mode</th>
-                            <th>Price/Hour</th>
+                            <th>Price/Hr</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -229,24 +189,24 @@
                     <tbody>
                         {% for slot in lot.slots %}
                         <tr>
-                            <td><strong>{{ slot.slot_number }}</strong></td>
-                            <td><span class="badge bg-info">{{ slot.slot_type }}</span></td>
-                            <td>
+                            <td data-label="Slot #"><strong>{{ slot.slot_number }}</strong></td>
+                            <td data-label="Type"><span class="badge bg-warning">{{ slot.slot_type }}</span></td>
+                            <td data-label="Mode">
                                 {% if slot.mode == 'prebook' %}
-                                    <span class="badge bg-warning text-dark">Pre-book</span>
+                                    <span class="badge bg-primary">Pre-book</span>
                                 {% else %}
                                     <span class="badge bg-secondary">Walk-in</span>
                                 {% endif %}
                             </td>
-                            <td>₹{{ "%.2f"|format(slot.price_per_hour) }}</td>
-                            <td>
+                            <td data-label="Price/Hr">₹{{ "%.2f"|format(slot.price_per_hour) }}</td>
+                            <td data-label="Status">
                                 {% if slot.status == 'available' %}
                                     <span class="badge bg-success">Available</span>
                                 {% else %}
                                     <span class="badge bg-danger">Occupied</span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td data-label="Action">
                                 <a href="{{ url_for('delete_slot', slot_id=slot._id) }}" 
                                    class="btn btn-sm btn-danger"
                                    onclick="return confirm('Delete this slot?')">
@@ -259,22 +219,27 @@
                 </table>
             </div>
         {% else %}
-            <p class="text-muted">No slots added yet</p>
+            <div class="pk-empty-state py-3">
+                <i class="fas fa-parking" style="font-size:2rem;"></i>
+                <p>No slots added yet</p>
+            </div>
         {% endif %}
     </div>
 </div>
 {% endfor %}
 
 {% if not lots %}
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle"></i> No parking lots created yet. Create your first parking lot above!
+    <div class="card fade-in">
+        <div class="card-body pk-empty-state">
+            <i class="fas fa-building"></i>
+            <p>No parking lots created yet. Create your first parking lot above!</p>
+        </div>
     </div>
 {% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Watchman password show/hide toggle
     document.querySelectorAll('.toggle-watchman-pwd').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const input = this.closest('.input-group').querySelector('.watchman-pwd');

@@ -4,143 +4,135 @@
 
 {% block content %}
 <style>
-    :root {
-        --wm-primary: #1e293b;
-        --wm-accent: #6366f1;
-        --wm-accent-light: #818cf8;
-        --wm-success: #10b981;
-        --wm-warning: #f59e0b;
-        --wm-danger: #ef4444;
-        --wm-info: #3b82f6;
-        --wm-surface: #f8fafc;
-        --wm-card-bg: #ffffff;
-        --wm-text: #1e293b;
-        --wm-text-muted: #64748b;
-        --wm-border: #e2e8f0;
-        --wm-gradient-1: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        --wm-gradient-2: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        --wm-gradient-3: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        --wm-gradient-4: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    }
-
     .wm-header {
-        background: var(--wm-gradient-1);
-        border-radius: 16px;
-        padding: 28px 32px;
-        margin-bottom: 28px;
+        background: linear-gradient(135deg, var(--pk-primary) 0%, var(--pk-primary-hover) 100%);
+        border-radius: var(--pk-radius-xl);
+        padding: 28px 28px;
+        margin-bottom: 24px;
         color: white;
-        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.25);
-    }
-    .wm-header h2 { font-weight: 700; font-size: 1.6rem; margin: 0; }
-    .wm-header .lot-label { opacity: 0.85; font-size: 0.95rem; margin-top: 4px; }
-
-    .stat-card {
-        border-radius: 14px; padding: 22px 20px; color: white;
-        text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 4px 24px rgba(232,89,12,0.2);
         position: relative; overflow: hidden;
     }
-    .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.18); }
-    .stat-card .stat-icon { font-size: 2.2rem; opacity: 0.3; position: absolute; right: 16px; top: 16px; }
-    .stat-card .stat-value { font-size: 2.2rem; font-weight: 800; line-height: 1.1; }
-    .stat-card .stat-label { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-top: 6px; }
-    .stat-total { background: var(--wm-gradient-4); }
-    .stat-occupied { background: var(--wm-gradient-3); }
-    .stat-available { background: var(--wm-gradient-2); }
+    .wm-header h2 { font-weight: 900; font-size: 1.4rem; margin: 0; }
+    .wm-header .lot-label { opacity: 0.9; font-size: 0.9rem; margin-top: 4px; }
+
+    .wm-stat-card {
+        border-radius: var(--pk-radius); padding: 20px;
+        text-align: center; transition: transform 0.2s ease;
+        position: relative; overflow: hidden; border: 1px solid var(--pk-border);
+        background: var(--pk-white);
+    }
+    .wm-stat-card:hover { transform: translateY(-2px); box-shadow: var(--pk-shadow-md); }
+    .wm-stat-card .wm-stat-icon {
+        width: 44px; height: 44px; border-radius: 12px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 1.1rem; margin-bottom: 8px;
+    }
+    .wm-stat-card .wm-stat-value { font-size: 2rem; font-weight: 800; line-height: 1.1; }
+    .wm-stat-card .wm-stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; color: var(--pk-text-muted); margin-top: 4px; }
+    .wm-stat-total { border-left: 4px solid var(--pk-primary); }
+    .wm-stat-total .wm-stat-icon { background: var(--pk-primary-light); color: var(--pk-primary); }
+    .wm-stat-total .wm-stat-value { color: var(--pk-primary); }
+    .wm-stat-occupied { border-left: 4px solid var(--pk-secondary); }
+    .wm-stat-occupied .wm-stat-icon { background: var(--pk-secondary-light); color: var(--pk-secondary); }
+    .wm-stat-occupied .wm-stat-value { color: var(--pk-secondary); }
+    .wm-stat-available { border-left: 4px solid var(--pk-success); }
+    .wm-stat-available .wm-stat-icon { background: var(--pk-success-light); color: var(--pk-success); }
+    .wm-stat-available .wm-stat-value { color: var(--pk-success); }
 
     .scanner-section {
-        background: var(--wm-card-bg); border-radius: 16px;
-        border: 1px solid var(--wm-border); box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-        padding: 28px; margin-bottom: 28px;
+        background: var(--pk-white); border-radius: var(--pk-radius);
+        border: 1px solid var(--pk-border); box-shadow: var(--pk-shadow);
+        padding: 24px; margin-bottom: 24px;
     }
-    .scanner-section h4 { font-weight: 700; color: var(--wm-primary); margin-bottom: 20px; }
+    .scanner-section h4 { font-weight: 800; color: var(--pk-text); margin-bottom: 20px; font-size: 1.1rem; }
 
-    #qr-reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 14px; overflow: hidden; }
-    #qr-reader video { border-radius: 14px; }
+    #qr-reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: var(--pk-radius); overflow: hidden; }
+    #qr-reader video { border-radius: var(--pk-radius); }
     #qr-reader__scan_region { min-height: 250px; }
     #qr-reader__dashboard { padding: 10px !important; }
     #qr-reader__dashboard_section_csr button {
-        background: var(--wm-accent) !important; color: white !important;
+        background: var(--pk-primary) !important; color: white !important;
         border: none !important; padding: 10px 24px !important;
-        border-radius: 10px !important; font-weight: 600 !important; cursor: pointer !important;
+        border-radius: 10px !important; font-weight: 700 !important; cursor: pointer !important;
     }
-    #qr-reader__dashboard_section_csr button:hover { background: var(--wm-accent-light) !important; }
+    #qr-reader__dashboard_section_csr button:hover { background: var(--pk-primary-hover) !important; }
     #qr-reader__status_span { display: none !important; }
 
     .scan-tabs { display: flex; gap: 8px; margin-bottom: 20px; justify-content: center; flex-wrap: wrap; }
     .scan-tab {
-        padding: 10px 24px; border-radius: 10px; border: 2px solid var(--wm-border);
-        background: white; cursor: pointer; font-weight: 600; font-size: 0.9rem;
-        color: var(--wm-text-muted); transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+        padding: 10px 22px; border-radius: 10px; border: 2px solid var(--pk-border);
+        background: white; cursor: pointer; font-weight: 700; font-size: 0.88rem;
+        color: var(--pk-text-muted); transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+        min-height: 48px;
     }
-    .scan-tab:hover { border-color: var(--wm-accent); color: var(--wm-accent); }
-    .scan-tab.active { background: var(--wm-accent); color: white; border-color: var(--wm-accent); }
+    .scan-tab:hover { border-color: var(--pk-primary); color: var(--pk-primary); }
+    .scan-tab.active { background: var(--pk-primary); color: white; border-color: var(--pk-primary); }
 
     .upload-zone {
-        border: 3px dashed var(--wm-border); border-radius: 14px; padding: 40px 20px;
-        text-align: center; cursor: pointer; transition: all 0.3s; background: var(--wm-surface);
+        border: 3px dashed var(--pk-border); border-radius: var(--pk-radius); padding: 40px 20px;
+        text-align: center; cursor: pointer; transition: all 0.3s; background: var(--pk-surface);
         max-width: 500px; margin: 0 auto;
     }
-    .upload-zone:hover, .upload-zone.dragover { border-color: var(--wm-accent); background: #eef2ff; }
-    .upload-zone i { font-size: 3rem; color: var(--wm-accent); opacity: 0.5; }
-    .upload-zone p { margin-top: 12px; color: var(--wm-text-muted); font-weight: 500; }
+    .upload-zone:hover, .upload-zone.dragover { border-color: var(--pk-primary); background: var(--pk-primary-light); }
+    .upload-zone i { font-size: 3rem; color: var(--pk-primary); opacity: 0.5; }
+    .upload-zone p { margin-top: 12px; color: var(--pk-text-muted); font-weight: 600; }
 
     .result-card {
-        border-radius: 14px; padding: 24px; margin-top: 20px;
-        display: none; animation: slideUp 0.35s ease; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        border-radius: var(--pk-radius); padding: 24px; margin-top: 20px;
+        display: none; animation: slideUp 0.35s ease; border: none; box-shadow: var(--pk-shadow-md);
     }
     .result-card.show { display: block; }
-    .result-card-checkin { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-left: 5px solid var(--wm-success); color: #064e3b; }
-    .result-card-checkout { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-left: 5px solid var(--wm-info); color: #1e3a5f; }
-    .result-card-pending { background: linear-gradient(135deg, #fef9c3 0%, #fde68a 100%); border-left: 5px solid var(--wm-warning); color: #78350f; }
-    .result-card-error { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-left: 5px solid var(--wm-danger); color: #7f1d1d; }
+    .result-card-checkin { background: var(--pk-success-light); border-left: 5px solid var(--pk-success); color: #064e3b; }
+    .result-card-checkout { background: var(--pk-primary-light); border-left: 5px solid var(--pk-primary); color: #9A3412; }
+    .result-card-pending { background: var(--pk-secondary-light); border-left: 5px solid var(--pk-secondary); color: #78350f; }
+    .result-card-error { background: var(--pk-danger-light); border-left: 5px solid var(--pk-danger); color: #7f1d1d; }
     .result-card .result-icon { font-size: 2rem; margin-bottom: 10px; }
-    .result-card .result-action { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; opacity: 0.8; }
+    .result-card .result-action { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; opacity: 0.8; }
     .result-card .result-message { font-size: 1.05rem; font-weight: 600; margin-top: 6px; }
     .result-card .result-details { margin-top: 12px; font-size: 0.9rem; opacity: 0.85; }
 
     @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
     .logs-section {
-        background: var(--wm-card-bg); border-radius: 16px; border: 1px solid var(--wm-border);
-        box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 28px;
+        background: var(--pk-white); border-radius: var(--pk-radius); border: 1px solid var(--pk-border);
+        box-shadow: var(--pk-shadow); padding: 24px;
     }
-    .logs-section h4 { font-weight: 700; color: var(--wm-primary); margin-bottom: 16px; }
+    .logs-section h4 { font-weight: 800; color: var(--pk-text); margin-bottom: 16px; font-size: 1.1rem; }
     .log-entry {
         display: flex; align-items: center; padding: 12px 14px; border-radius: 10px;
-        margin-bottom: 8px; background: var(--wm-surface); transition: background 0.2s;
+        margin-bottom: 8px; background: var(--pk-surface); transition: background 0.2s;
     }
-    .log-entry:hover { background: #eef2ff; }
+    .log-entry:hover { background: var(--pk-primary-light); }
     .log-action-icon {
-        width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center;
+        width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center;
         justify-content: center; margin-right: 14px; flex-shrink: 0; font-size: 0.85rem; color: white;
     }
-    .log-action-icon.checkin { background: var(--wm-success); }
-    .log-action-icon.checkout { background: var(--wm-info); }
-    .log-action-icon.error { background: var(--wm-danger); }
-    .log-action-icon.denied { background: var(--wm-warning); }
+    .log-action-icon.checkin { background: var(--pk-success); }
+    .log-action-icon.checkout { background: var(--pk-primary); }
+    .log-action-icon.error { background: var(--pk-danger); }
+    .log-action-icon.denied { background: var(--pk-secondary); }
     .log-details { flex: 1; min-width: 0; }
-    .log-details .log-msg { font-weight: 600; font-size: 0.88rem; color: var(--wm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .log-details .log-meta { font-size: 0.78rem; color: var(--wm-text-muted); margin-top: 2px; }
+    .log-details .log-msg { font-weight: 700; font-size: 0.88rem; color: var(--pk-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .log-details .log-meta { font-size: 0.78rem; color: var(--pk-text-muted); margin-top: 2px; }
 
     .processing-overlay {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(15, 23, 42, 0.6); z-index: 9999; align-items: center; justify-content: center;
+        background: rgba(26, 26, 26, 0.5); z-index: 9999; align-items: center; justify-content: center;
     }
     .processing-overlay.show { display: flex; }
     .processing-box {
-        background: white; border-radius: 16px; padding: 40px 48px;
-        text-align: center; box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+        background: white; border-radius: var(--pk-radius-lg); padding: 40px 48px;
+        text-align: center; box-shadow: var(--pk-shadow-lg);
     }
-    .processing-box .spinner-border { width: 3rem; height: 3rem; color: var(--wm-accent); }
-    .processing-box p { margin-top: 16px; font-weight: 600; color: var(--wm-text); }
+    .processing-box .spinner-border { width: 3rem; height: 3rem; color: var(--pk-primary); }
+    .processing-box p { margin-top: 16px; font-weight: 700; color: var(--pk-text); }
 
-    /* Payment inline & modal specifics */
-    .pay-info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+    .pay-info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--pk-border); }
     .pay-info-row:last-child { border-bottom: none; }
-    .pay-info-label { color: #64748b; font-size: 0.9rem; }
+    .pay-info-label { color: var(--pk-text-muted); font-size: 0.9rem; }
     .pay-info-value { font-weight: 700; font-size: 0.95rem; }
-    .shortfall-alert { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 16px; margin-top: 12px; color: #991b1b; }
+    .shortfall-alert { background: var(--pk-danger-light); border: 1px solid #fecaca; border-radius: 10px; padding: 12px 16px; margin-top: 12px; color: #991b1b; }
     .pay-btn { border-radius: 10px; font-weight: 700; padding: 10px 0; transition: opacity 0.2s; }
     .pay-result { border-radius: 10px; padding: 14px 16px; margin-top: 14px; display: none; }
     .pay-result.show { display: block; }
@@ -156,7 +148,7 @@
 </div>
 
 <!-- Header -->
-<div class="wm-header">
+<div class="wm-header fade-in">
     <div class="d-flex align-items-center justify-content-between flex-wrap">
         <div>
             <h2><i class="fas fa-shield-alt me-2"></i>Watchman Dashboard</h2>
@@ -171,33 +163,33 @@
 </div>
 
 <!-- Stats Row -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-4 fade-in">
     <div class="col-4">
-        <div class="stat-card stat-total">
-            <i class="fas fa-parking stat-icon"></i>
-            <div class="stat-value" id="statTotal">{{ total_slots }}</div>
-            <div class="stat-label">Total Slots</div>
+        <div class="wm-stat-card wm-stat-total">
+            <div class="wm-stat-icon"><i class="fas fa-parking"></i></div>
+            <div class="wm-stat-value" id="statTotal">{{ total_slots }}</div>
+            <div class="wm-stat-label">Total Slots</div>
         </div>
     </div>
     <div class="col-4">
-        <div class="stat-card stat-occupied">
-            <i class="fas fa-car stat-icon"></i>
-            <div class="stat-value" id="statOccupied">{{ occupied }}</div>
-            <div class="stat-label">Occupied</div>
+        <div class="wm-stat-card wm-stat-occupied">
+            <div class="wm-stat-icon"><i class="fas fa-car"></i></div>
+            <div class="wm-stat-value" id="statOccupied">{{ occupied }}</div>
+            <div class="wm-stat-label">Occupied</div>
         </div>
     </div>
     <div class="col-4">
-        <div class="stat-card stat-available">
-            <i class="fas fa-check-circle stat-icon"></i>
-            <div class="stat-value" id="statAvailable">{{ available }}</div>
-            <div class="stat-label">Available</div>
+        <div class="wm-stat-card wm-stat-available">
+            <div class="wm-stat-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="wm-stat-value" id="statAvailable">{{ available }}</div>
+            <div class="wm-stat-label">Available</div>
         </div>
     </div>
 </div>
 
 <!-- Scanner Section -->
-<div class="scanner-section">
-    <h4><i class="fas fa-qrcode me-2"></i>QR Code Scanner</h4>
+<div class="scanner-section fade-in">
+    <h4><i class="fas fa-qrcode me-2 text-pk-primary"></i>QR Code Scanner</h4>
 
     <div class="scan-tabs">
         <div class="scan-tab active" id="tabCamera" onclick="switchTab('camera')">
@@ -221,7 +213,7 @@
         <div class="upload-zone" id="uploadZone" onclick="document.getElementById('qrFileInput').click()">
             <i class="fas fa-cloud-upload-alt"></i>
             <p>Click to upload or drag &amp; drop a QR code screenshot</p>
-            <small class="text-muted">Supports PNG, JPG, JPEG</small>
+            <small style="color:var(--pk-text-muted);">Supports PNG, JPG, JPEG</small>
         </div>
         <input type="file" id="qrFileInput" accept="image/*" style="display:none;" onchange="handleFileUpload(event)">
     </div>
@@ -229,7 +221,7 @@
     <!-- Manual entry panel -->
     <div id="panelManual" style="display:none;">
         <div style="max-width:500px; margin:0 auto;">
-            <p class="text-muted mb-2" style="font-size:0.88rem;">
+            <p style="color:var(--pk-text-muted);font-size:0.88rem;" class="mb-2">
                 <i class="fas fa-info-circle me-1"></i> Paste the QR code JSON data below:
             </p>
             <div class="input-group">
@@ -264,7 +256,7 @@
                 <button id="btnInlineCash" class="btn btn-success pay-btn" onclick="payInvoice('cash')">
                     <i class="fas fa-money-bill-wave me-2"></i>Collect Cash
                 </button>
-                <button id="btnInlineUpi" class="btn btn-info text-white pay-btn" onclick="payInvoice('upi')">
+                <button id="btnInlineUpi" class="btn btn-warning pay-btn" onclick="payInvoice('upi')">
                     <i class="fas fa-mobile-alt me-2"></i>Collect UPI
                 </button>
             </div>
@@ -274,9 +266,9 @@
 </div>
 
 <!-- Recent Scan Logs -->
-<div class="logs-section">
+<div class="logs-section fade-in">
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <h4 class="mb-0"><i class="fas fa-history me-2"></i>Recent Scans</h4>
+        <h4 class="mb-0"><i class="fas fa-history me-2 text-pk-primary"></i>Recent Scans</h4>
         <button class="btn btn-sm btn-outline-primary" onclick="loadRecentScans()">
             <i class="fas fa-sync-alt"></i> Refresh
         </button>
@@ -305,8 +297,8 @@
             </div>
             {% endfor %}
         {% else %}
-            <div class="text-center text-muted py-4" id="noLogsMsg">
-                <i class="fas fa-inbox" style="font-size:2rem; opacity:0.3;"></i>
+            <div class="text-center py-4" style="color:var(--pk-text-muted);" id="noLogsMsg">
+                <i class="fas fa-inbox" style="font-size:2rem; opacity:0.3; color:var(--pk-primary);"></i>
                 <p class="mt-2 mb-0">No scans yet. Start scanning QR codes!</p>
             </div>
         {% endif %}
@@ -367,9 +359,9 @@
     function showCameraError(err) {
         document.getElementById('qr-reader').innerHTML = `
             <div class="text-center py-5">
-                <i class="fas fa-video-slash" style="font-size:3rem;color:var(--wm-danger);opacity:0.5;"></i>
-                <p class="mt-3 mb-1" style="font-weight:600;">Camera not available</p>
-                <p class="text-muted" style="font-size:0.85rem;">
+                <i class="fas fa-video-slash" style="font-size:3rem;color:var(--pk-danger);opacity:0.5;"></i>
+                <p class="mt-3 mb-1" style="font-weight:700;">Camera not available</p>
+                <p style="color:var(--pk-text-muted);font-size:0.85rem;">
                     ${err.message || 'Could not access camera'}<br>
                     <strong>Use "Upload QR Image" or "Manual Entry" tab instead.</strong>
                 </p>
@@ -482,14 +474,13 @@
         const details = document.getElementById('resultDetails');
         const inlineSection = document.getElementById('inlinePaySection');
 
-        // Reset
         card.className = 'result-card show';
         inlineSection.style.display = 'none';
         currentInvoiceId = null;
 
         if (result.success && result.action === 'checkin') {
             card.classList.add('result-card-checkin');
-            icon.innerHTML = '<i class="fas fa-check-circle" style="color:#059669;"></i>';
+            icon.innerHTML = '<i class="fas fa-check-circle" style="color:var(--pk-success);"></i>';
             action.textContent = '✅ CHECK-IN';
             message.textContent = result.message;
             details.innerHTML = result.slot_number
@@ -497,9 +488,8 @@
             setTimeout(() => hideResult(), 8000);
 
         } else if (result.success && result.action === 'checkout') {
-            // Subscription free checkout
             card.classList.add('result-card-checkout');
-            icon.innerHTML = '<i class="fas fa-sign-out-alt" style="color:#2563eb;"></i>';
+            icon.innerHTML = '<i class="fas fa-sign-out-alt" style="color:var(--pk-primary);"></i>';
             action.textContent = '🔵 CHECK-OUT (SUBSCRIPTION)';
             message.textContent = result.message;
             details.innerHTML = '';
@@ -508,16 +498,14 @@
             setTimeout(() => hideResult(), 8000);
 
         } else if (result.success && result.action === 'checkout_pending') {
-            // Payment required — show inline payment controls in the result card
             card.classList.add('result-card-pending');
-            icon.innerHTML = '<i class="fas fa-cash-register" style="color:#d97706;"></i>';
+            icon.innerHTML = '<i class="fas fa-cash-register" style="color:var(--pk-secondary);"></i>';
             action.textContent = '🟡 CHECKOUT — COLLECT PAYMENT';
             message.textContent = result.message;
             details.innerHTML = `
                 <div><i class="fas fa-clock"></i> Duration: <strong>${escapeHtml(result.duration || '')}</strong></div>
                 <div><i class="fas fa-rupee-sign"></i> Amount Due: <strong>₹${(result.amount_due || 0).toFixed(2)}</strong></div>`;
 
-            // Populate inline payment section
             currentInvoiceId = result.invoice_id;
             const payInfo = document.getElementById('inlinePayInfo');
             payInfo.innerHTML = `
@@ -531,14 +519,13 @@
                 </div>
                 <div class="pay-info-row">
                     <span class="pay-info-label"><i class="fas fa-rupee-sign me-1"></i> Amount Due</span>
-                    <span class="pay-info-value text-danger fs-5">₹${(result.amount_due || 0).toFixed(2)}</span>
+                    <span class="pay-info-value" style="color:var(--pk-danger);font-size:1.1rem;">₹${(result.amount_due || 0).toFixed(2)}</span>
                 </div>
                 <div class="pay-info-row">
                     <span class="pay-info-label"><i class="fas fa-wallet me-1"></i> User Wallet</span>
-                    <span class="pay-info-value text-success">₹${(result.user_wallet_balance || 0).toFixed(2)}</span>
+                    <span class="pay-info-value" style="color:var(--pk-success);">₹${(result.user_wallet_balance || 0).toFixed(2)}</span>
                 </div>`;
 
-            // Shortfall handling
             const shortfallAlert = document.getElementById('inlineShortfallAlert');
             const btnWallet = document.getElementById('btnInlineWallet');
             if (result.shortfall > 0) {
@@ -552,18 +539,16 @@
                 btnWallet.classList.remove('opacity-50');
             }
 
-            // Reset pay result & show buttons
             const payResult = document.getElementById('inlinePayResult');
             payResult.className = 'pay-result';
             payResult.innerHTML = '';
             document.getElementById('inlinePayButtons').style.display = '';
 
             inlineSection.style.display = 'block';
-            // Do NOT auto-hide for pending — user must complete payment
 
         } else {
             card.classList.add('result-card-error');
-            icon.innerHTML = '<i class="fas fa-times-circle" style="color:#dc2626;"></i>';
+            icon.innerHTML = '<i class="fas fa-times-circle" style="color:var(--pk-danger);"></i>';
             action.textContent = '❌ ERROR';
             message.textContent = result.message || 'An unknown error occurred.';
             details.innerHTML = '';
@@ -581,9 +566,9 @@
         const resultDiv = document.getElementById('inlinePayResult');
         resultDiv.className = 'pay-result show';
         resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
-        resultDiv.style.background = '#f1f5f9';
-        resultDiv.style.border = '1px solid #e2e8f0';
-        resultDiv.style.color = '#475569';
+        resultDiv.style.background = '#FFF8F1';
+        resultDiv.style.border = '1px solid #F0E6DB';
+        resultDiv.style.color = '#6B7280';
 
         try {
             const resp = await fetch('/watchman/invoice/pay/' + currentInvoiceId, {
@@ -597,32 +582,29 @@
             const data = await resp.json();
 
             if (data.success) {
-                resultDiv.style.background = '#d1fae5';
-                resultDiv.style.border = '1px solid #6ee7b7';
+                resultDiv.style.background = 'var(--pk-success-light)';
+                resultDiv.style.border = '1px solid var(--pk-success)';
                 resultDiv.style.color = '#064e3b';
-                resultDiv.innerHTML = `<i class="fas fa-check-circle me-2 text-success"></i><strong>${escapeHtml(data.message)}</strong>`;
+                resultDiv.innerHTML = `<i class="fas fa-check-circle me-2" style="color:var(--pk-success);"></i><strong>${escapeHtml(data.message)}</strong>`;
                 document.getElementById('inlinePayButtons').style.display = 'none';
-                // Refresh stats and logs on success
                 refreshStats();
                 loadRecentScans();
-                // Auto-hide after 5 seconds
                 setTimeout(() => hideResult(), 5000);
             } else {
-                resultDiv.style.background = '#fef2f2';
-                resultDiv.style.border = '1px solid #fecaca';
+                resultDiv.style.background = 'var(--pk-danger-light)';
+                resultDiv.style.border = '1px solid var(--pk-danger)';
                 resultDiv.style.color = '#991b1b';
-                resultDiv.innerHTML = `<i class="fas fa-times-circle me-2 text-danger"></i><strong>${escapeHtml(data.message || 'Payment failed.')}</strong>`;
+                resultDiv.innerHTML = `<i class="fas fa-times-circle me-2" style="color:var(--pk-danger);"></i><strong>${escapeHtml(data.message || 'Payment failed.')}</strong>`;
                 btns.forEach(b => { b.disabled = false; });
-                // Re-disable wallet if still insufficient
                 if (data.shortfall) {
                     document.getElementById('btnInlineWallet').disabled = true;
                 }
             }
         } catch (err) {
-            resultDiv.style.background = '#fef2f2';
-            resultDiv.style.border = '1px solid #fecaca';
+            resultDiv.style.background = 'var(--pk-danger-light)';
+            resultDiv.style.border = '1px solid var(--pk-danger)';
             resultDiv.style.color = '#991b1b';
-            resultDiv.innerHTML = '<i class="fas fa-times-circle me-2 text-danger"></i><strong>Network error. Please try again.</strong>';
+            resultDiv.innerHTML = '<i class="fas fa-times-circle me-2" style="color:var(--pk-danger);"></i><strong>Network error. Please try again.</strong>';
             btns.forEach(b => { b.disabled = false; });
         }
     }
@@ -661,7 +643,7 @@
             const logs = await resp.json();
             const container = document.getElementById('logsContainer');
             if (!logs.length) {
-                container.innerHTML = `<div class="text-center text-muted py-4"><i class="fas fa-inbox" style="font-size:2rem;opacity:0.3;"></i><p class="mt-2 mb-0">No scans yet.</p></div>`;
+                container.innerHTML = `<div class="text-center py-4" style="color:var(--pk-text-muted);"><i class="fas fa-inbox" style="font-size:2rem;opacity:0.3;color:var(--pk-primary);"></i><p class="mt-2 mb-0">No scans yet.</p></div>`;
                 return;
             }
             container.innerHTML = logs.map(log => {

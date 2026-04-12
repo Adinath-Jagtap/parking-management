@@ -1,103 +1,147 @@
 {% extends "base.html" %}
 
-{% block title %}Parking Lots - Parking Management{% endblock %}
+{% block title %}Parking Lots - ParkEasy{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pk-lot-card {
+        border-radius: var(--pk-radius-lg);
+        border: 1px solid var(--pk-border);
+        background: var(--pk-white);
+        box-shadow: var(--pk-shadow);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        will-change: transform;
+        overflow: hidden;
+        height: 100%;
+        display: flex; flex-direction: column;
+    }
+    .pk-lot-card:hover { transform: translateY(-6px); box-shadow: var(--pk-shadow-hover); }
+    .pk-lot-card .lot-header {
+        background: linear-gradient(135deg, var(--pk-primary) 0%, var(--pk-primary-hover) 100%);
+        padding: 20px 24px; color: #fff;
+    }
+    .pk-lot-card .lot-header h5 { font-weight: 800; margin: 0; font-size: 1.1rem; }
+    .pk-lot-card .lot-header small { opacity: 0.8; font-size: 0.82rem; }
+    .pk-lot-card .lot-body { padding: 20px 24px; flex: 1; }
+    .pk-lot-card .lot-footer { padding: 16px 24px; border-top: 1px solid var(--pk-border); }
+    .pk-lot-stat {
+        text-align: center; padding: 12px 8px;
+        border-radius: var(--pk-radius-sm);
+        background: var(--pk-surface);
+    }
+    .pk-lot-stat .val { font-size: 1.5rem; font-weight: 900; line-height: 1; }
+    .pk-lot-stat .lbl { font-size: 0.7rem; font-weight: 700; color: var(--pk-text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .pk-search-bar {
+        position: sticky; top: 88px; z-index: 10;
+        background: var(--pk-white);
+        border-radius: var(--pk-radius-lg);
+        box-shadow: var(--pk-shadow-md);
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        border: 1px solid var(--pk-border);
+    }
+    @media (max-width: 767px) {
+        .pk-search-bar { top: 76px; }
+        .pk-lot-card:hover { transform: none; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="fas fa-building"></i> Available Parking Lots</h2>
+<h1 class="pk-page-title fade-in"><i class="fas fa-building"></i> Parking Lots</h1>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="GET" action="{{ url_for('parking_lots') }}" class="row g-3">
-            <div class="col-md-10">
-                <input type="text" name="search" class="form-control" placeholder="Search by name, address or pincode" value="{{ search }}">
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-search"></i> Search
-                </button>
-            </div>
-        </form>
-    </div>
+<!-- Sticky Search Bar -->
+<div class="pk-search-bar fade-in">
+    <form method="GET" action="{{ url_for('parking_lots') }}" class="row g-2 align-items-center">
+        <div class="col">
+            <input type="text" name="search" class="form-control" placeholder="Search by name, address or pincode..." value="{{ search }}" style="min-height:48px;">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search me-1"></i><span class="d-none d-md-inline">Search</span></button>
+        </div>
+        {% if search %}
+        <div class="col-auto">
+            <a href="{{ url_for('parking_lots') }}" class="btn btn-outline-secondary"><i class="fas fa-times"></i></a>
+        </div>
+        {% endif %}
+    </form>
 </div>
 
 {% if lots %}
-    <div class="row">
-        {% for lot in lots %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">{{ lot.name }}</h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">
-                        <i class="fas fa-map-marker-alt text-danger"></i> {{ lot.address }}
-                    </p>
-                    <p class="card-text">
-                        <i class="fas fa-mail-bulk text-info"></i> Pincode: {{ lot.pincode }}
-                    </p>
-                    <p class="card-text">
-                        <i class="fas fa-user text-secondary"></i> Admin: {{ lot.admin.name }}
-                    </p>
-                    <hr>
-                    <div class="row text-center mb-2">
-                        <div class="col-6">
-                            <h5 class="text-success">{{ lot.available_slots }}</h5>
-                            <small class="text-muted">Available</small>
-                        </div>
-                        <div class="col-6">
-                            <h5 class="text-muted">{{ lot.total_slots }}</h5>
-                            <small class="text-muted">Total Slots</small>
+<div class="row g-4 fade-in">
+    {% for lot in lots %}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="pk-lot-card">
+            <div class="lot-header">
+                <h5>{{ lot.name }}</h5>
+                <small><i class="fas fa-map-marker-alt me-1"></i>{{ lot.address }}</small>
+            </div>
+            <div class="lot-body">
+                <p class="mb-1" style="color:var(--pk-text-muted);font-size:0.88rem;">
+                    <i class="fas fa-mail-bulk me-1 text-pk-primary"></i> Pincode: <strong>{{ lot.pincode }}</strong>
+                </p>
+                <p class="mb-3" style="color:var(--pk-text-muted);font-size:0.88rem;">
+                    <i class="fas fa-user me-1 text-pk-primary"></i> Admin: {{ lot.admin.name }}
+                </p>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="pk-lot-stat">
+                            <div class="val" style="color:var(--pk-success);">{{ lot.available_slots }}</div>
+                            <div class="lbl">Available</div>
                         </div>
                     </div>
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <span class="badge bg-info text-white px-2 py-1"><i class="fas fa-walking me-1"></i>Walk-in: {{ lot.walkin_slots|default(0) }}</span>
-                        </div>
-                        <div class="col-6">
-                            <span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-calendar-check me-1"></i>Pre-book: {{ lot.prebook_slots|default(0) }}</span>
+                    <div class="col-6">
+                        <div class="pk-lot-stat">
+                            <div class="val" style="color:var(--pk-text-muted);">{{ lot.total_slots }}</div>
+                            <div class="lbl">Total</div>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <a href="{{ url_for('prebook_slot', lot_id=lot._id) }}" class="btn btn-warning w-100 mb-2">
-                        <i class="fas fa-calendar-check"></i> Pre-book a Slot
-                    </a>
-                    <div class="alert alert-light border mb-0 py-2 px-3" style="font-size: 0.82rem;">
-                        <i class="fas fa-info-circle text-info me-1"></i>
-                        <strong>Walk-in:</strong> Just arrive and show your vehicle QR code to the watchman — no booking needed.
+                <div class="row g-2">
+                    <div class="col-6">
+                        <span class="badge bg-secondary w-100 py-2"><i class="fas fa-walking me-1"></i>Walk-in: {{ lot.walkin_slots|default(0) }}</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="badge bg-warning w-100 py-2"><i class="fas fa-calendar-check me-1"></i>Pre-book: {{ lot.prebook_slots|default(0) }}</span>
                     </div>
                 </div>
             </div>
+            <div class="lot-footer">
+                <a href="{{ url_for('prebook_slot', lot_id=lot._id) }}" class="btn btn-primary w-100 mb-2">
+                    <i class="fas fa-calendar-check me-1"></i> Pre-book a Slot
+                </a>
+                <div class="alert alert-info mb-0 py-2 px-3" style="font-size:0.82rem;">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>Walk-in:</strong> Just arrive and show your vehicle QR code.
+                </div>
+            </div>
         </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if total_pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page > 1 %}
+        <li class="page-item"><a class="page-link" href="{{ url_for('parking_lots', page=page-1, search=search) }}">&laquo;</a></li>
+        {% endif %}
+        {% for p in range(1, total_pages + 1) %}
+        <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link" href="{{ url_for('parking_lots', page=p, search=search) }}">{{ p }}</a></li>
         {% endfor %}
-    </div>
-    
-    {% if total_pages > 1 %}
-    <nav aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
-            {% if page > 1 %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('parking_lots', page=page-1, search=search) }}">Previous</a>
-                </li>
-            {% endif %}
-            
-            {% for p in range(1, total_pages + 1) %}
-                <li class="page-item {% if p == page %}active{% endif %}">
-                    <a class="page-link" href="{{ url_for('parking_lots', page=p, search=search) }}">{{ p }}</a>
-                </li>
-            {% endfor %}
-            
-            {% if page < total_pages %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('parking_lots', page=page+1, search=search) }}">Next</a>
-                </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
+        {% if page < total_pages %}
+        <li class="page-item"><a class="page-link" href="{{ url_for('parking_lots', page=page+1, search=search) }}">&raquo;</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
 {% else %}
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle"></i> No parking lots found.
+<div class="card fade-in">
+    <div class="card-body pk-empty-state">
+        <i class="fas fa-building"></i>
+        <p>No parking lots found{% if search %} for "{{ search }}"{% endif %}.</p>
     </div>
+</div>
 {% endif %}
 {% endblock %}

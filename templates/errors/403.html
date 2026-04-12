@@ -1,15 +1,49 @@
 {% extends "base.html" %}
 
-{% block title %}403 - Access Forbidden{% endblock %}
+{% block title %}403 - Access Denied - ParkEasy{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pk-error-page {
+        min-height: calc(100vh - 200px);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        text-align: center; padding: 40px 20px;
+        position: relative; overflow: hidden;
+    }
+    .pk-error-code {
+        font-size: 8rem; font-weight: 900;
+        color: var(--pk-primary); line-height: 1;
+        text-shadow: 0 4px 24px rgba(232,89,12,0.15);
+    }
+    .pk-error-msg { font-size: 1.4rem; font-weight: 800; margin: 12px 0 8px; }
+    .pk-error-desc { color: var(--pk-text-muted); max-width: 400px; margin-bottom: 28px; }
+    .pk-error-icon {
+        width: 80px; height: 80px; border-radius: 50%;
+        background: var(--pk-danger-light); color: var(--pk-danger);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem; margin-bottom: 20px;
+        animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220,38,38,0.2); }
+        50% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(220,38,38,0); }
+    }
+    @media (max-width: 767px) {
+        .pk-error-code { font-size: 5rem; }
+        .pk-error-msg { font-size: 1.1rem; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="text-center py-5">
-    <i class="fas fa-ban fa-5x text-danger mb-4"></i>
-    <h1 class="display-4">403</h1>
-    <h2 class="mb-4">Access Forbidden</h2>
-    <p class="lead">You don't have permission to access this resource.</p>
-    <a href="{{ url_for('index') }}" class="btn btn-primary">
-        <i class="fas fa-home"></i> Go to Homepage
+<div class="pk-error-page fade-in">
+    <div class="pk-error-icon"><i class="fas fa-lock"></i></div>
+    <div class="pk-error-code">403</div>
+    <h2 class="pk-error-msg">Access Denied</h2>
+    <p class="pk-error-desc">You don't have permission to access this page. If you think this is an error, please contact support.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg px-4">
+        <i class="fas fa-home me-2"></i>Go to Homepage
     </a>
 </div>
 {% endblock %}

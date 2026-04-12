@@ -1,74 +1,70 @@
 {% extends "base.html" %}
 
-{% block title %}My Collections - Watchman{% endblock %}
+{% block title %}My Collections - Watchman - ParkEasy{% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="fas fa-hand-holding-usd"></i> My Collections</h2>
+<h2 class="pk-page-title fade-in"><i class="fas fa-hand-holding-usd"></i> My Collections</h2>
 
 <!-- Date Range Filter -->
-<div class="card mb-4">
+<div class="card mb-4 fade-in">
     <div class="card-body">
         <form method="GET" id="filterForm" class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label for="from_date" class="form-label fw-semibold">From Date</label>
+            <div class="col-6 col-md-4">
+                <label for="from_date" class="form-label">From Date</label>
                 <input type="date" name="from_date" id="from_date" class="form-control" value="{{ from_date }}">
             </div>
-            <div class="col-md-4">
-                <label for="to_date" class="form-label fw-semibold">To Date</label>
+            <div class="col-6 col-md-4">
+                <label for="to_date" class="form-label">To Date</label>
                 <input type="date" name="to_date" id="to_date" class="form-control" value="{{ to_date }}">
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-filter"></i> Filter
-                </button>
+            <div class="col-6 col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-1"></i>Filter</button>
             </div>
-            <div class="col-md-2">
-                <a href="?" class="btn btn-outline-secondary w-100">
-                    <i class="fas fa-times"></i> Clear
-                </a>
+            <div class="col-6 col-md-2">
+                <a href="?" class="btn btn-outline-secondary w-100"><i class="fas fa-times me-1"></i>Clear</a>
             </div>
         </form>
     </div>
 </div>
 
 <!-- Totals -->
-<div class="row g-3 mb-4" id="totalsRow">
-    <div class="col-md-4">
-        <div class="card border-0 text-white" style="background:linear-gradient(135deg,#10b981,#059669);border-radius:14px;">
-            <div class="card-body text-center py-3">
-                <div class="fs-6 opacity-75"><i class="fas fa-money-bill-wave me-1"></i> Total Cash</div>
-                <div class="fs-3 fw-bold" id="totalCash">—</div>
+<div class="row g-3 mb-4 fade-in" id="totalsRow">
+    <div class="col-4">
+        <div class="pk-stat-card accent-green">
+            <div class="text-center">
+                <div class="stat-label"><i class="fas fa-money-bill-wave me-1"></i>Cash</div>
+                <div class="stat-value" id="totalCash" style="color:var(--pk-success);">—</div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card border-0 text-white" style="background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:14px;">
-            <div class="card-body text-center py-3">
-                <div class="fs-6 opacity-75"><i class="fas fa-mobile-alt me-1"></i> Total UPI</div>
-                <div class="fs-3 fw-bold" id="totalUpi">—</div>
+    <div class="col-4">
+        <div class="pk-stat-card accent-amber">
+            <div class="text-center">
+                <div class="stat-label"><i class="fas fa-mobile-alt me-1"></i>UPI</div>
+                <div class="stat-value" id="totalUpi" style="color:var(--pk-secondary);">—</div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card border-0 text-white" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:14px;">
-            <div class="card-body text-center py-3">
-                <div class="fs-6 opacity-75"><i class="fas fa-rupee-sign me-1"></i> Grand Total</div>
-                <div class="fs-3 fw-bold" id="totalAll">—</div>
+    <div class="col-4">
+        <div class="pk-stat-card">
+            <div class="text-center">
+                <div class="stat-label"><i class="fas fa-rupee-sign me-1"></i>Total</div>
+                <div class="stat-value" id="totalAll" style="color:var(--pk-primary);">—</div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Collections Table -->
-<div class="card">
+<div class="card fade-in">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="fas fa-list"></i> Collection Records</h5>
+        <h6 class="mb-0 fw-bold"><i class="fas fa-list me-2 text-pk-primary"></i>Collection Records</h6>
         <span class="badge bg-secondary" id="countBadge">Loading...</span>
     </div>
     <div class="card-body p-0">
         <div id="tableWrapper">
-            <div class="text-center py-5 text-muted">
-                <div class="spinner-border text-primary mb-3" role="status"></div>
+            <div class="text-center py-5" style="color:var(--pk-text-muted);">
+                <div class="spinner-border mb-3" role="status" style="color:var(--pk-primary);"></div>
                 <p class="mb-0">Loading collections...</p>
             </div>
         </div>
@@ -101,9 +97,9 @@
             const wrapper = document.getElementById('tableWrapper');
             if (!data.collections || data.collections.length === 0) {
                 wrapper.innerHTML = `
-                    <div class="text-center py-5 text-muted">
-                        <i class="fas fa-inbox" style="font-size:3rem;opacity:0.3;"></i>
-                        <p class="mt-3 mb-0">No collections found for the selected period.</p>
+                    <div class="pk-empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>No collections found for the selected period.</p>
                     </div>`;
                 return;
             }
@@ -111,24 +107,24 @@
             const rows = data.collections.map(c => {
                 const methodBadge = c.method === 'cash'
                     ? '<span class="badge bg-success">Cash</span>'
-                    : '<span class="badge bg-info">UPI</span>';
+                    : '<span class="badge bg-warning">UPI</span>';
                 const viewBtn = c.invoice_id
                     ? `<a href="/invoice/${escapeHtml(c.invoice_id)}" class="btn btn-sm btn-outline-primary" title="View Invoice"><i class="fas fa-eye"></i></a>`
-                    : '<span class="text-muted">—</span>';
+                    : '<span style="color:var(--pk-text-light);">—</span>';
                 return `<tr>
-                    <td><code>${escapeHtml(c.invoice_number)}</code></td>
-                    <td><span class="badge bg-secondary">${escapeHtml(c.vehicle_number)}</span></td>
-                    <td class="fw-bold text-success">₹${parseFloat(c.amount).toFixed(2)}</td>
-                    <td>${methodBadge}</td>
-                    <td class="text-muted" style="font-size:0.88rem;">${escapeHtml(c.collected_at)}</td>
-                    <td>${viewBtn}</td>
+                    <td data-label="Invoice #"><code>${escapeHtml(c.invoice_number)}</code></td>
+                    <td data-label="Vehicle"><span class="badge bg-secondary">${escapeHtml(c.vehicle_number)}</span></td>
+                    <td data-label="Amount" class="fw-bold" style="color:var(--pk-success);">₹${parseFloat(c.amount).toFixed(2)}</td>
+                    <td data-label="Method">${methodBadge}</td>
+                    <td data-label="Collected At" style="color:var(--pk-text-muted);font-size:0.88rem;">${escapeHtml(c.collected_at)}</td>
+                    <td data-label="Invoice">${viewBtn}</td>
                 </tr>`;
             }).join('');
 
             wrapper.innerHTML = `
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover align-middle mb-0">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle mb-0 table-responsive-cards">
+                        <thead>
                             <tr>
                                 <th>Invoice #</th>
                                 <th>Vehicle</th>
@@ -139,13 +135,13 @@
                             </tr>
                         </thead>
                         <tbody>${rows}</tbody>
-                        <tfoot class="table-secondary fw-bold">
+                        <tfoot style="background:var(--pk-primary-light);">
                             <tr>
-                                <td colspan="2">Totals (${data.count} records)</td>
-                                <td>₹${(data.total_collected || 0).toFixed(2)}</td>
+                                <td colspan="2" class="fw-bold">Totals (${data.count} records)</td>
+                                <td class="fw-bold">₹${(data.total_collected || 0).toFixed(2)}</td>
                                 <td>
                                     <span class="badge bg-success me-1">Cash ₹${(data.total_cash || 0).toFixed(2)}</span>
-                                    <span class="badge bg-info">UPI ₹${(data.total_upi || 0).toFixed(2)}</span>
+                                    <span class="badge bg-warning">UPI ₹${(data.total_upi || 0).toFixed(2)}</span>
                                 </td>
                                 <td></td>
                                 <td></td>

@@ -1,106 +1,68 @@
 {% extends "base.html" %}
 
-{% block title %}Platform Analytics - Super Admin - Parking Management{% endblock %}
+{% block title %}Platform Analytics - Super Admin - ParkEasy{% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="fas fa-chart-bar"></i> Platform Analytics</h2>
+<h2 class="pk-page-title fade-in"><i class="fas fa-chart-bar"></i> Platform Analytics</h2>
 
-<!-- Platform Revenue Line Chart -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0"><i class="fas fa-rupee-sign text-primary me-2"></i>Platform Revenue (Last 30 Days)</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="revenueChart" height="90"></canvas>
-            </div>
-        </div>
+<div class="card mb-4 fade-in">
+    <div class="card-header">
+        <h6 class="mb-0 fw-bold"><i class="fas fa-rupee-sign me-2 text-pk-primary"></i>Platform Revenue (Last 30 Days)</h6>
     </div>
+    <div class="card-body"><canvas id="revenueChart" height="90"></canvas></div>
 </div>
 
-<!-- Top Lots – grouped bar (Revenue + Bookings) -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0"><i class="fas fa-trophy text-warning me-2"></i>Top 5 Lots – Revenue &amp; Bookings</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="topLotsGroupedChart" height="90"></canvas>
-            </div>
-        </div>
+<div class="card mb-4 fade-in">
+    <div class="card-header">
+        <h6 class="mb-0 fw-bold"><i class="fas fa-trophy me-2 text-pk-primary"></i>Top 5 Lots – Revenue &amp; Bookings</h6>
     </div>
+    <div class="card-body"><canvas id="topLotsGroupedChart" height="90"></canvas></div>
 </div>
 
-<!-- User Growth & Booking Breakdown -->
-<div class="row mb-4 g-3">
+<div class="row mb-4 g-3 fade-in">
     <div class="col-md-7">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0"><i class="fas fa-users text-success me-2"></i>User Growth (Last 6 Months)</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="userGrowthChart"></canvas>
-            </div>
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0 fw-bold"><i class="fas fa-users me-2 text-pk-primary"></i>User Growth (Last 6 Months)</h6></div>
+            <div class="card-body"><canvas id="userGrowthChart"></canvas></div>
         </div>
     </div>
     <div class="col-md-5">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0"><i class="fas fa-chart-pie text-info me-2"></i>Booking Type Breakdown</h5>
-            </div>
-            <div class="card-body d-flex align-items-center justify-content-center">
-                <canvas id="bookingTypeChart"></canvas>
-            </div>
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0 fw-bold"><i class="fas fa-chart-pie me-2 text-pk-primary"></i>Booking Type Breakdown</h6></div>
+            <div class="card-body d-flex align-items-center justify-content-center"><canvas id="bookingTypeChart"></canvas></div>
         </div>
     </div>
 </div>
 
-<!-- Unpaid Invoices with age column & flag icon -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm border-start border-warning border-4">
-            <div class="card-header bg-warning bg-opacity-10 border-bottom">
-                <h5 class="mb-0"><i class="fas fa-exclamation-triangle text-warning me-2"></i>Unpaid Invoices (Older than 1 Hour)</h5>
-            </div>
-            <div class="card-body">
-                {% if unpaid_invoices %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle table-sm mb-0" id="unpaidTable">
-                        <thead class="table-light">
-                            <tr>
-                                <th></th>
-                                <th>Invoice #</th>
-                                <th>User</th>
-                                <th>Email</th>
-                                <th>Lot</th>
-                                <th class="text-end">Amount</th>
-                                <th>Generated</th>
-                                <th>Age</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for inv in unpaid_invoices %}
-                            <tr data-generated="{{ inv.generated_at }}">
-                                <td class="flag-cell"></td>
-                                <td><strong>{{ inv.invoice_number }}</strong></td>
-                                <td>{{ inv.user_name }}</td>
-                                <td><small class="text-muted">{{ inv.user_email }}</small></td>
-                                <td>{{ inv.lot_name }}</td>
-                                <td class="text-end fw-bold">₹{{ "%.2f"|format(inv.amount) }}</td>
-                                <td><small>{{ inv.generated_at }}</small></td>
-                                <td class="age-cell fw-semibold"></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted mb-0"><i class="fas fa-check-circle text-success me-1"></i>No unpaid invoices older than 1 hour. 🎉</p>
-                {% endif %}
-            </div>
+<!-- Unpaid Invoices -->
+<div class="card mb-4 fade-in" style="border-left:4px solid var(--pk-secondary);">
+    <div class="card-header" style="background:var(--pk-secondary-light);">
+        <h6 class="mb-0 fw-bold"><i class="fas fa-exclamation-triangle me-2 text-pk-secondary"></i>Unpaid Invoices (Older than 1 Hour)</h6>
+    </div>
+    <div class="card-body">
+        {% if unpaid_invoices %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle table-sm mb-0" id="unpaidTable">
+                <thead><tr><th></th><th>Invoice #</th><th>User</th><th>Email</th><th>Lot</th><th class="text-end">Amount</th><th>Generated</th><th>Age</th></tr></thead>
+                <tbody>
+                    {% for inv in unpaid_invoices %}
+                    <tr data-generated="{{ inv.generated_at }}">
+                        <td class="flag-cell"></td>
+                        <td><strong>{{ inv.invoice_number }}</strong></td>
+                        <td>{{ inv.user_name }}</td>
+                        <td><small style="color:var(--pk-text-muted);">{{ inv.user_email }}</small></td>
+                        <td>{{ inv.lot_name }}</td>
+                        <td class="text-end fw-bold">₹{{ "%.2f"|format(inv.amount) }}</td>
+                        <td><small style="color:var(--pk-text-muted);">{{ inv.generated_at }}</small></td>
+                        <td class="age-cell fw-semibold"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+        <p style="color:var(--pk-text-muted);" class="mb-0"><i class="fas fa-check-circle me-1" style="color:var(--pk-success);"></i>No unpaid invoices older than 1 hour. 🎉</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -112,161 +74,66 @@
 <script type="application/json" id="data-user-growth">{{ user_growth | tojson }}</script>
 <script type="application/json" id="data-booking-type">{{ booking_type_breakdown | tojson }}</script>
 <script>
-    // ── Platform Revenue Line Chart ──
+    const PK_ORANGE = '#E8590C';
+    const PK_AMBER = '#F59F00';
+    const PK_BROWN = '#C2410C';
+
+    // Revenue Line Chart
     const revenueData = JSON.parse(document.getElementById('data-platform-revenue').textContent);
     new Chart(document.getElementById('revenueChart').getContext('2d'), {
         type: 'line',
         data: {
             labels: revenueData.map(d => d.date),
-            datasets: [{
-                label: 'Revenue (₹)',
-                data: revenueData.map(d => d.revenue),
-                borderColor: 'rgb(54, 162, 235)',
-                backgroundColor: 'rgba(54, 162, 235, 0.08)',
-                fill: true,
-                tension: 0.35,
-                pointRadius: 2,
-                pointHoverRadius: 5,
-                borderWidth: 2
-            }]
+            datasets: [{ label: 'Revenue (₹)', data: revenueData.map(d => d.revenue), borderColor: PK_ORANGE, backgroundColor: 'rgba(232,89,12,0.08)', fill: true, tension: 0.35, pointRadius: 2, pointHoverRadius: 5, borderWidth: 2 }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: ctx => '₹' + ctx.parsed.y.toFixed(2) } }
-            },
-            scales: {
-                y: { beginAtZero: true, ticks: { callback: v => '₹' + v } }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '₹' + ctx.parsed.y.toFixed(2) } } }, scales: { y: { beginAtZero: true, ticks: { callback: v => '₹' + v }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } } }
     });
 
-    // ── Top 5 Lots – Grouped Bar (Revenue & Bookings side-by-side) ──
+    // Top 5 Lots
     const topRevData = JSON.parse(document.getElementById('data-top-lots-revenue').textContent);
     const topBookData = JSON.parse(document.getElementById('data-top-lots-bookings').textContent);
-
-    // Merge lot names (union)
     const lotNameSet = new Set([...topRevData.map(d => d.lot_name), ...topBookData.map(d => d.lot_name)]);
     const lotNames = [...lotNameSet].slice(0, 5);
-    const revMap = {};
-    topRevData.forEach(d => revMap[d.lot_name] = d.revenue);
-    const bookMap = {};
-    topBookData.forEach(d => bookMap[d.lot_name] = d.count);
+    const revMap = {}; topRevData.forEach(d => revMap[d.lot_name] = d.revenue);
+    const bookMap = {}; topBookData.forEach(d => bookMap[d.lot_name] = d.count);
 
     new Chart(document.getElementById('topLotsGroupedChart').getContext('2d'), {
         type: 'bar',
         data: {
             labels: lotNames,
             datasets: [
-                {
-                    label: 'Revenue (₹)',
-                    data: lotNames.map(n => revMap[n] || 0),
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgb(54, 162, 235)',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Bookings',
-                    data: lotNames.map(n => bookMap[n] || 0),
-                    backgroundColor: 'rgba(255, 159, 64, 0.7)',
-                    borderColor: 'rgb(255, 159, 64)',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    yAxisID: 'y1'
-                }
+                { label: 'Revenue (₹)', data: lotNames.map(n => revMap[n] || 0), backgroundColor: 'rgba(232,89,12,0.7)', borderColor: PK_ORANGE, borderWidth: 1, borderRadius: 6, yAxisID: 'y' },
+                { label: 'Bookings', data: lotNames.map(n => bookMap[n] || 0), backgroundColor: 'rgba(245,159,0,0.7)', borderColor: PK_AMBER, borderWidth: 1, borderRadius: 6, yAxisID: 'y1' }
             ]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => {
-                            if (ctx.datasetIndex === 0) return 'Revenue: ₹' + ctx.parsed.y.toFixed(2);
-                            return 'Bookings: ' + ctx.parsed.y;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    type: 'linear',
-                    position: 'left',
-                    beginAtZero: true,
-                    title: { display: true, text: 'Revenue (₹)' },
-                    ticks: { callback: v => '₹' + v }
-                },
-                y1: {
-                    type: 'linear',
-                    position: 'right',
-                    beginAtZero: true,
-                    title: { display: true, text: 'Bookings' },
-                    grid: { drawOnChartArea: false }
-                }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } }, scales: { y: { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Revenue (₹)' }, ticks: { callback: v => '₹' + v }, grid: { color: 'rgba(0,0,0,0.04)' } }, y1: { type: 'linear', position: 'right', beginAtZero: true, title: { display: true, text: 'Bookings' }, grid: { drawOnChartArea: false } } } }
     });
 
-    // ── User Growth Line Chart ──
+    // User Growth
     const userGrowthData = JSON.parse(document.getElementById('data-user-growth').textContent);
     new Chart(document.getElementById('userGrowthChart').getContext('2d'), {
         type: 'line',
         data: {
             labels: userGrowthData.map(d => d.month),
-            datasets: [{
-                label: 'New Users',
-                data: userGrowthData.map(d => d.count),
-                borderColor: 'rgb(25, 135, 84)',
-                backgroundColor: 'rgba(25, 135, 84, 0.1)',
-                fill: true,
-                tension: 0.35,
-                pointRadius: 4,
-                pointBackgroundColor: 'rgb(25, 135, 84)',
-                borderWidth: 2
-            }]
+            datasets: [{ label: 'New Users', data: userGrowthData.map(d => d.count), borderColor: PK_ORANGE, backgroundColor: 'rgba(232,89,12,0.1)', fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: PK_ORANGE, borderWidth: 2 }]
         },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: { beginAtZero: true, ticks: { precision: 0 } }
-            }
-        }
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } } }
     });
 
-    // ── Booking Type Pie Chart ──
+    // Booking Type Pie
     const btData = JSON.parse(document.getElementById('data-booking-type').textContent);
     new Chart(document.getElementById('bookingTypeChart').getContext('2d'), {
         type: 'pie',
         data: {
             labels: ['Walk-in', 'Pre-booked', 'Subscription', 'No-show'],
-            datasets: [{
-                data: [btData.walkin, btData.prebooked, btData.subscription, btData.noshow],
-                backgroundColor: ['#0d6efd', '#198754', '#0dcaf0', '#dc3545'],
-                borderWidth: 2,
-                borderColor: '#fff',
-                hoverOffset: 8
-            }]
+            datasets: [{ data: [btData.walkin, btData.prebooked, btData.subscription, btData.noshow], backgroundColor: [PK_ORANGE, PK_AMBER, PK_BROWN, '#DC2626'], borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
         },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyle: 'circle' } }
-            }
-        }
+        options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyle: 'circle' } } } }
     });
 
-    // ── Unpaid Invoices: calculate age + flag icon for >24hrs ──
+    // Unpaid Invoices age calculation
     document.querySelectorAll('#unpaidTable tbody tr').forEach(row => {
-        const genStr = row.dataset.generated; // "YYYY-MM-DD HH:MM"
+        const genStr = row.dataset.generated;
         if (!genStr) return;
         const genDate = new Date(genStr.replace(' ', 'T'));
         const now = new Date();
@@ -274,22 +141,16 @@
         const diffHours = Math.floor(diffMs / 3600000);
         const diffDays = Math.floor(diffHours / 24);
         const remHours = diffHours % 24;
-
         const ageCell = row.querySelector('.age-cell');
         const flagCell = row.querySelector('.flag-cell');
-
-        let ageText = '';
-        if (diffDays > 0) ageText = diffDays + 'd ' + remHours + 'h';
-        else ageText = diffHours + 'h';
+        let ageText = diffDays > 0 ? diffDays + 'd ' + remHours + 'h' : diffHours + 'h';
         ageCell.textContent = ageText;
-
         if (diffHours >= 24) {
-            flagCell.innerHTML = '<i class="fas fa-flag text-danger" title="Overdue > 24h"></i>';
-            ageCell.classList.add('text-danger');
-            row.classList.add('table-danger');
+            flagCell.innerHTML = '<i class="fas fa-flag" style="color:var(--pk-danger);" title="Overdue > 24h"></i>';
+            ageCell.style.color = 'var(--pk-danger)';
         } else {
-            flagCell.innerHTML = '<i class="fas fa-clock text-warning" title="Pending"></i>';
-            ageCell.classList.add('text-warning');
+            flagCell.innerHTML = '<i class="fas fa-clock" style="color:var(--pk-secondary);" title="Pending"></i>';
+            ageCell.style.color = 'var(--pk-secondary)';
         }
     });
 </script>

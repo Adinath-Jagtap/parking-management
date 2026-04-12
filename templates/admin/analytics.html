@@ -1,92 +1,76 @@
 {% extends "base.html" %}
 
-{% block title %}Analytics - Admin - Parking Management{% endblock %}
+{% block title %}Analytics - Admin - ParkEasy{% endblock %}
 
-{% block content %}
+{% block extra_css %}
 <style>
     .heatmap-cell {
-        width: 42px;
-        height: 32px;
-        text-align: center;
-        vertical-align: middle;
-        font-size: 0.75rem;
-        font-weight: 600;
-        border: 1px solid #dee2e6;
+        width: 42px; height: 32px; text-align: center; vertical-align: middle;
+        font-size: 0.75rem; font-weight: 600; border: 1px solid var(--pk-border);
     }
     .heatmap-header {
-        font-weight: 600;
-        font-size: 0.75rem;
-        text-align: center;
-        background: #f8f9fa;
+        font-weight: 700; font-size: 0.75rem; text-align: center;
+        background: var(--pk-primary-light); color: var(--pk-primary);
     }
     .heatmap-hour {
-        font-weight: 600;
-        font-size: 0.75rem;
-        background: #f8f9fa;
-        text-align: right;
-        padding-right: 8px !important;
-        white-space: nowrap;
+        font-weight: 600; font-size: 0.75rem; background: var(--pk-primary-light);
+        text-align: right; padding-right: 8px !important; white-space: nowrap;
+        color: var(--pk-text);
     }
     .revenue-toggle .btn { font-size: 0.85rem; }
 </style>
+{% endblock %}
 
-<h2 class="mb-4"><i class="fas fa-chart-line"></i> Lot Analytics</h2>
+{% block content %}
+<h2 class="pk-page-title fade-in"><i class="fas fa-chart-line"></i> Lot Analytics</h2>
 
 <!-- Revenue with Day/Week/Month toggle -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-rupee-sign text-primary me-2"></i>Revenue</h5>
-                <div class="btn-group btn-group-sm revenue-toggle" role="group">
-                    <button type="button" class="btn btn-outline-primary active" data-range="day">Day</button>
-                    <button type="button" class="btn btn-outline-primary" data-range="week">Week</button>
-                    <button type="button" class="btn btn-outline-primary" data-range="month">Month</button>
-                </div>
-            </div>
-            <div class="card-body">
-                <canvas id="revenueDailyChart" height="100"></canvas>
-            </div>
+<div class="card mb-4 fade-in">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold"><i class="fas fa-rupee-sign me-2 text-pk-primary"></i>Revenue</h6>
+        <div class="btn-group btn-group-sm revenue-toggle" role="group">
+            <button type="button" class="btn btn-outline-primary active" data-range="day">Day</button>
+            <button type="button" class="btn btn-outline-primary" data-range="week">Week</button>
+            <button type="button" class="btn btn-outline-primary" data-range="month">Month</button>
         </div>
+    </div>
+    <div class="card-body">
+        <canvas id="revenueDailyChart" height="100"></canvas>
     </div>
 </div>
 
 <!-- Peak Hours Heatmap -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0"><i class="fas fa-fire text-danger me-2"></i>Peak Hours Heatmap</h5>
-            </div>
-            <div class="card-body p-2">
-                <div class="table-responsive">
-                    <table class="table table-bordered mb-0" id="heatmapTable" style="table-layout:fixed;">
-                        <thead>
-                            <tr>
-                                <th class="heatmap-header" style="width:70px;">Hour</th>
-                                <th class="heatmap-header">Mon</th>
-                                <th class="heatmap-header">Tue</th>
-                                <th class="heatmap-header">Wed</th>
-                                <th class="heatmap-header">Thu</th>
-                                <th class="heatmap-header">Fri</th>
-                                <th class="heatmap-header">Sat</th>
-                                <th class="heatmap-header">Sun</th>
-                            </tr>
-                        </thead>
-                        <tbody id="heatmapBody"></tbody>
-                    </table>
-                </div>
-            </div>
+<div class="card mb-4 fade-in">
+    <div class="card-header">
+        <h6 class="mb-0 fw-bold"><i class="fas fa-fire me-2 text-pk-primary"></i>Peak Hours Heatmap</h6>
+    </div>
+    <div class="card-body p-2">
+        <div class="table-responsive">
+            <table class="table table-bordered mb-0" id="heatmapTable" style="table-layout:fixed;">
+                <thead>
+                    <tr>
+                        <th class="heatmap-header" style="width:70px;">Hour</th>
+                        <th class="heatmap-header">Mon</th>
+                        <th class="heatmap-header">Tue</th>
+                        <th class="heatmap-header">Wed</th>
+                        <th class="heatmap-header">Thu</th>
+                        <th class="heatmap-header">Fri</th>
+                        <th class="heatmap-header">Sat</th>
+                        <th class="heatmap-header">Sun</th>
+                    </tr>
+                </thead>
+                <tbody id="heatmapBody"></tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <!-- Occupancy & Booking Breakdown -->
-<div class="row mb-4 g-3">
+<div class="row mb-4 g-3 fade-in">
     <div class="col-md-7">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0"><i class="fas fa-parking text-info me-2"></i>Occupancy % per Lot</h5>
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-parking me-2 text-pk-primary"></i>Occupancy % per Lot</h6>
             </div>
             <div class="card-body">
                 <canvas id="occupancyChart"></canvas>
@@ -94,9 +78,9 @@
         </div>
     </div>
     <div class="col-md-5">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0"><i class="fas fa-chart-pie text-success me-2"></i>Booking Type Breakdown</h5>
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-chart-pie me-2 text-pk-primary"></i>Booking Type Breakdown</h6>
             </div>
             <div class="card-body d-flex align-items-center justify-content-center">
                 <canvas id="bookingTypeChart"></canvas>
@@ -106,52 +90,51 @@
 </div>
 
 <!-- Watchman Collections -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0"><i class="fas fa-hand-holding-usd text-warning me-2"></i>Watchman Collections</h5>
-            </div>
-            <div class="card-body">
-                {% if watchman_collections %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Watchman</th>
-                                <th class="text-end">Cash (₹)</th>
-                                <th class="text-end">UPI (₹)</th>
-                                <th class="text-end">Total (₹)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% set ns = namespace(grand_cash=0, grand_upi=0) %}
-                            {% for w in watchman_collections %}
-                            {% set ns.grand_cash = ns.grand_cash + w.total_cash %}
-                            {% set ns.grand_upi = ns.grand_upi + w.total_upi %}
-                            <tr>
-                                <td><i class="fas fa-user-shield text-muted me-1"></i>{{ w.name }}</td>
-                                <td class="text-end">₹{{ "%.2f"|format(w.total_cash) }}</td>
-                                <td class="text-end">₹{{ "%.2f"|format(w.total_upi) }}</td>
-                                <td class="text-end fw-bold">₹{{ "%.2f"|format(w.total_cash + w.total_upi) }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                        <tfoot class="table-dark">
-                            <tr>
-                                <th>Grand Total</th>
-                                <th class="text-end">₹{{ "%.2f"|format(ns.grand_cash) }}</th>
-                                <th class="text-end">₹{{ "%.2f"|format(ns.grand_upi) }}</th>
-                                <th class="text-end">₹{{ "%.2f"|format(ns.grand_cash + ns.grand_upi) }}</th>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted mb-0">No watchman collections recorded yet.</p>
-                {% endif %}
-            </div>
+<div class="card mb-4 fade-in">
+    <div class="card-header">
+        <h6 class="mb-0 fw-bold"><i class="fas fa-hand-holding-usd me-2 text-pk-primary"></i>Watchman Collections</h6>
+    </div>
+    <div class="card-body">
+        {% if watchman_collections %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Watchman</th>
+                        <th class="text-end">Cash (₹)</th>
+                        <th class="text-end">UPI (₹)</th>
+                        <th class="text-end">Total (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set ns = namespace(grand_cash=0, grand_upi=0) %}
+                    {% for w in watchman_collections %}
+                    {% set ns.grand_cash = ns.grand_cash + w.total_cash %}
+                    {% set ns.grand_upi = ns.grand_upi + w.total_upi %}
+                    <tr>
+                        <td><i class="fas fa-user-shield me-1 text-pk-primary"></i>{{ w.name }}</td>
+                        <td class="text-end">₹{{ "%.2f"|format(w.total_cash) }}</td>
+                        <td class="text-end">₹{{ "%.2f"|format(w.total_upi) }}</td>
+                        <td class="text-end fw-bold">₹{{ "%.2f"|format(w.total_cash + w.total_upi) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot style="background:var(--pk-primary-light);">
+                    <tr>
+                        <th class="fw-bold">Grand Total</th>
+                        <th class="text-end">₹{{ "%.2f"|format(ns.grand_cash) }}</th>
+                        <th class="text-end">₹{{ "%.2f"|format(ns.grand_upi) }}</th>
+                        <th class="text-end">₹{{ "%.2f"|format(ns.grand_cash + ns.grand_upi) }}</th>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
+        {% else %}
+        <div class="pk-empty-state py-3">
+            <i class="fas fa-hand-holding-usd" style="font-size:2rem;"></i>
+            <p>No watchman collections recorded yet.</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -163,9 +146,11 @@
 <script type="application/json" id="data-booking-type">{{ booking_type_breakdown | tojson }}</script>
 <script type="application/json" id="data-watchman">{{ watchman_collections | tojson }}</script>
 <script>
-    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const PK_ORANGE = '#E8590C';
+    const PK_AMBER = '#F59F00';
+    const PK_BROWN = '#C2410C';
 
-    // ── Revenue chart with Day / Week / Month toggle ──
+    // ── Revenue chart ──
     const rawRevData = JSON.parse(document.getElementById('data-revenue-daily').textContent);
     let revenueChart = null;
 
@@ -182,7 +167,7 @@
     function aggregateMonthly(data) {
         const map = {};
         data.forEach(d => {
-            const m = d.date.substring(0, 7); // YYYY-MM
+            const m = d.date.substring(0, 7);
             map[m] = (map[m] || 0) + d.revenue;
         });
         return Object.entries(map).map(([month, revenue]) => ({ date: month, revenue: Math.round(revenue * 100) / 100 }));
@@ -197,24 +182,17 @@
                 datasets: [{
                     label: 'Revenue (₹)',
                     data: viewData.map(d => d.revenue),
-                    borderColor: 'rgb(54, 162, 235)',
-                    backgroundColor: 'rgba(54, 162, 235, 0.08)',
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: 3,
-                    pointHoverRadius: 6,
-                    borderWidth: 2
+                    borderColor: PK_ORANGE,
+                    backgroundColor: 'rgba(232, 89, 12, 0.08)',
+                    fill: true, tension: 0.35, pointRadius: 3, pointHoverRadius: 6, borderWidth: 2
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => '₹' + ctx.parsed.y.toFixed(2) } }
-                },
+                responsive: true, maintainAspectRatio: true,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '₹' + ctx.parsed.y.toFixed(2) } } },
                 scales: {
-                    y: { beginAtZero: true, ticks: { callback: v => '₹' + v } }
+                    y: { beginAtZero: true, ticks: { callback: v => '₹' + v }, grid: { color: 'rgba(0,0,0,0.04)' } },
+                    x: { grid: { display: false } }
                 }
             }
         });
@@ -233,36 +211,31 @@
         });
     });
 
-    // ── Peak Hours Heatmap ──
+    // ── Peak Hours Heatmap (orange gradient) ──
     const peakData = JSON.parse(document.getElementById('data-peak-hours').textContent);
-    // Build a 24×7 grid
     const grid = Array.from({ length: 24 }, () => Array(7).fill(0));
     let maxCount = 1;
-    peakData.forEach(p => {
-        grid[p.hour][p.day_of_week] = p.count;
-        if (p.count > maxCount) maxCount = p.count;
-    });
+    peakData.forEach(p => { grid[p.hour][p.day_of_week] = p.count; if (p.count > maxCount) maxCount = p.count; });
 
     const heatBody = document.getElementById('heatmapBody');
     for (let h = 0; h < 24; h++) {
         const tr = document.createElement('tr');
-        const hourLabel = String(h).padStart(2, '0') + ':00';
-        tr.innerHTML = `<td class="heatmap-hour">${hourLabel}</td>`;
+        tr.innerHTML = `<td class="heatmap-hour">${String(h).padStart(2, '0')}:00</td>`;
         for (let d = 0; d < 7; d++) {
             const val = grid[h][d];
             const intensity = val / maxCount;
-            // Green gradient: 0 = white, 1 = deep green
-            const r = Math.round(255 - intensity * 200);
-            const g = Math.round(255 - intensity * 60);
-            const b = Math.round(255 - intensity * 200);
-            const color = val === 0 ? '#fff' : `rgb(${r},${g},${b})`;
-            const textColor = intensity > 0.6 ? '#fff' : '#333';
+            // Orange gradient: white → burnt orange
+            const r = Math.round(255 - intensity * 23);
+            const g = Math.round(255 - intensity * 166);
+            const b = Math.round(255 - intensity * 243);
+            const color = val === 0 ? '#FFF8F1' : `rgb(${r},${g},${b})`;
+            const textColor = intensity > 0.5 ? '#fff' : '#2B2B2B';
             tr.innerHTML += `<td class="heatmap-cell" style="background:${color};color:${textColor}">${val || ''}</td>`;
         }
         heatBody.appendChild(tr);
     }
 
-    // ── Occupancy % bar chart ──
+    // ── Occupancy % ──
     const occData = JSON.parse(document.getElementById('data-occupancy').textContent);
     const occPercent = occData.map(d => d.total > 0 ? Math.round(d.occupied / d.total * 100) : 0);
     new Chart(document.getElementById('occupancyChart').getContext('2d'), {
@@ -270,23 +243,15 @@
         data: {
             labels: occData.map(d => d.lot_name),
             datasets: [{
-                label: 'Occupancy %',
-                data: occPercent,
-                backgroundColor: occPercent.map(p => p > 80 ? 'rgba(220,53,69,0.7)' : p > 50 ? 'rgba(255,193,7,0.7)' : 'rgba(25,135,84,0.7)'),
-                borderRadius: 6,
-                borderWidth: 0
+                label: 'Occupancy %', data: occPercent,
+                backgroundColor: occPercent.map(p => p > 80 ? 'rgba(220,53,69,0.7)' : p > 50 ? 'rgba(245,159,0,0.7)' : 'rgba(22,163,74,0.7)'),
+                borderRadius: 8, borderWidth: 0
             }]
         },
         options: {
-            responsive: true,
-            indexAxis: 'y',
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: ctx => ctx.parsed.x + '%' } }
-            },
-            scales: {
-                x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
-            }
+            responsive: true, indexAxis: 'y',
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.x + '%' } } },
+            scales: { x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, grid: { color: 'rgba(0,0,0,0.04)' } }, y: { grid: { display: false } } }
         }
     });
 
@@ -298,17 +263,13 @@
             labels: ['Walk-in', 'Pre-booked', 'Subscription', 'No-show'],
             datasets: [{
                 data: [btData.walkin, btData.prebooked, btData.subscription, btData.noshow],
-                backgroundColor: ['#0d6efd', '#198754', '#0dcaf0', '#dc3545'],
-                borderWidth: 2,
-                borderColor: '#fff',
-                hoverOffset: 8
+                backgroundColor: [PK_ORANGE, PK_AMBER, PK_BROWN, '#DC2626'],
+                borderWidth: 2, borderColor: '#fff', hoverOffset: 8
             }]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyle: 'circle' } }
-            }
+            plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyle: 'circle' } } }
         }
     });
 </script>

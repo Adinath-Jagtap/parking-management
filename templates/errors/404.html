@@ -1,15 +1,74 @@
 {% extends "base.html" %}
 
-{% block title %}404 - Page Not Found{% endblock %}
+{% block title %}404 - Page Not Found - ParkEasy{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pk-error-page {
+        min-height: calc(100vh - 200px);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        text-align: center; padding: 40px 20px;
+        position: relative; overflow: hidden;
+    }
+    .pk-error-code {
+        font-size: 8rem; font-weight: 900;
+        color: var(--pk-primary); line-height: 1;
+        text-shadow: 0 4px 24px rgba(232,89,12,0.15);
+    }
+    .pk-error-msg { font-size: 1.4rem; font-weight: 800; margin: 12px 0 8px; }
+    .pk-error-desc { color: var(--pk-text-muted); max-width: 400px; margin-bottom: 28px; }
+    .pk-error-road {
+        position: absolute; bottom: 0; left: 0; right: 0; height: 48px;
+        background: #374151; overflow: hidden;
+    }
+    .pk-error-road::before {
+        content: ''; position: absolute; top: 50%; left: 0; width: 200%;
+        height: 3px;
+        background: repeating-linear-gradient(90deg, var(--pk-secondary) 0, var(--pk-secondary) 24px, transparent 24px, transparent 48px);
+        animation: roadScroll 2s linear infinite;
+    }
+    @keyframes roadScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .pk-lost-car {
+        position: absolute; bottom: 46px;
+        animation: lostCar 6s ease-in-out infinite;
+    }
+    .pk-lost-car .cb { width: 72px; height: 26px; background: var(--pk-primary); border-radius: 8px 14px 3px 3px; position: relative; }
+    .pk-lost-car .cr { width: 40px; height: 16px; background: var(--pk-primary-hover); border-radius: 7px 7px 0 0; position: absolute; top: -16px; left: 12px; }
+    .pk-lost-car .cw {
+        width: 13px; height: 13px; background: #1A1A1A; border: 2px solid #6B7280;
+        border-radius: 50%; position: absolute; bottom: -6px;
+    }
+    .pk-lost-car .cw1 { left: 8px; animation: spinWheel 0.3s linear infinite; }
+    .pk-lost-car .cw2 { right: 8px; animation: spinWheel 0.3s linear infinite; }
+    @keyframes lostCar {
+        0% { left: -80px; transform: scaleX(1); }
+        40% { left: calc(50% - 36px); transform: scaleX(1); }
+        50% { left: calc(50% - 36px); transform: scaleX(1); }
+        55% { left: calc(50% - 36px); transform: scaleX(-1); }
+        100% { left: calc(100% + 80px); transform: scaleX(-1); }
+    }
+    @media (max-width: 767px) {
+        .pk-error-code { font-size: 5rem; }
+        .pk-error-msg { font-size: 1.1rem; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="text-center py-5">
-    <i class="fas fa-exclamation-triangle fa-5x text-warning mb-4"></i>
-    <h1 class="display-4">404</h1>
-    <h2 class="mb-4">Page Not Found</h2>
-    <p class="lead">The page you're looking for doesn't exist.</p>
-    <a href="{{ url_for('index') }}" class="btn btn-primary">
-        <i class="fas fa-home"></i> Go to Homepage
+<div class="pk-error-page fade-in">
+    <div class="pk-error-code">404</div>
+    <h2 class="pk-error-msg">Page Not Found</h2>
+    <p class="pk-error-desc">The page you're looking for doesn't exist or has been moved. Let's get you back on track.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg px-4">
+        <i class="fas fa-home me-2"></i>Go to Homepage
     </a>
+    <div class="pk-error-road">
+        <div class="pk-lost-car">
+            <div class="cb"><div class="cr"></div></div>
+            <div class="cw cw1"></div>
+            <div class="cw cw2"></div>
+        </div>
+    </div>
 </div>
 {% endblock %}

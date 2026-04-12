@@ -1,103 +1,64 @@
 {% extends "base.html" %}
 
-{% block title %}Wallet Adjustment - Super Admin{% endblock %}
+{% block title %}Wallet Adjustment - Super Admin - ParkEasy{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-content-center fade-in">
     <div class="col-md-8">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-bottom">
-                <h4 class="mb-0"><i class="fas fa-wallet text-primary me-2"></i>Wallet Adjustment</h4>
+        <div class="card" style="border-top:3px solid var(--pk-primary);">
+            <div class="card-header">
+                <h5 class="mb-0 fw-bold"><i class="fas fa-wallet me-2 text-pk-primary"></i>Wallet Adjustment</h5>
             </div>
             <div class="card-body">
-                <!-- User Info Banner -->
-                <div class="alert alert-light border mb-4">
+                <div class="alert alert-light mb-4" style="border:1px solid var(--pk-border);">
                     <div class="row align-items-center">
                         <div class="col-md-6">
-                            <p class="mb-1"><strong><i class="fas fa-user me-1"></i> {{ user.name }}</strong></p>
-                            <p class="mb-0 text-muted"><small>{{ user.email }}</small></p>
+                            <p class="mb-1"><strong><i class="fas fa-user me-1"></i>{{ user.name }}</strong></p>
+                            <p class="mb-0" style="color:var(--pk-text-muted);"><small>{{ user.email }}</small></p>
                         </div>
                         <div class="col-md-6 text-md-end">
-                            <small class="text-muted d-block">Current Wallet Balance</small>
-                            <h3 class="mb-0 text-primary fw-bold">₹{{ "%.2f"|format(user.wallet_balance|default(0)) }}</h3>
+                            <small style="color:var(--pk-text-muted);">Current Wallet Balance</small>
+                            <h3 class="mb-0 fw-bold" style="color:var(--pk-primary);">₹{{ "%.2f"|format(user.wallet_balance|default(0)) }}</h3>
                         </div>
                     </div>
                 </div>
 
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                    <!-- Credit / Debit Toggle -->
+                    
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Adjustment Type <span class="text-danger">*</span></label>
+                        <label class="form-label">Adjustment Type <span style="color:var(--pk-danger);">*</span></label>
                         <div class="d-flex gap-3">
                             <div class="form-check form-check-inline">
                                 <input class="form-check-input" type="radio" name="adjustment_type" id="typeCredit" value="credit" required>
-                                <label class="form-check-label text-success fw-semibold" for="typeCredit">
-                                    <i class="fas fa-plus-circle"></i> Credit (Add Money)
-                                </label>
+                                <label class="form-check-label fw-semibold" style="color:var(--pk-success);" for="typeCredit"><i class="fas fa-plus-circle me-1"></i>Credit (Add Money)</label>
                             </div>
                             <div class="form-check form-check-inline">
                                 <input class="form-check-input" type="radio" name="adjustment_type" id="typeDebit" value="debit" required>
-                                <label class="form-check-label text-danger fw-semibold" for="typeDebit">
-                                    <i class="fas fa-minus-circle"></i> Debit (Deduct Money)
-                                </label>
+                                <label class="form-check-label fw-semibold" style="color:var(--pk-danger);" for="typeDebit"><i class="fas fa-minus-circle me-1"></i>Debit (Deduct Money)</label>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Amount -->
+                    
                     <div class="mb-3">
-                        <label for="amount" class="form-label fw-bold">Amount (₹) <span class="text-danger">*</span></label>
+                        <label for="amount" class="form-label">Amount (₹) <span style="color:var(--pk-danger);">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text">₹</span>
                             <input type="number" class="form-control" id="amount" name="amount" min="0.01" step="0.01" required placeholder="0.00">
                         </div>
                     </div>
-
-                    <!-- Reason -->
+                    
                     <div class="mb-4">
-                        <label for="reason" class="form-label fw-bold">Reason <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="reason" name="reason" rows="3" required placeholder="e.g. Compensation for system error, Wrong charge refund, Promotional credit..."></textarea>
+                        <label for="reason" class="form-label">Reason <span style="color:var(--pk-danger);">*</span></label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" required placeholder="e.g. Compensation for system error, Wrong charge refund..."></textarea>
                         <div class="form-text">This reason will be recorded in the wallet transaction log.</div>
                     </div>
-
+                    
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to apply this wallet adjustment?');">
-                            <i class="fas fa-check"></i> Apply Adjustment
-                        </button>
+                        <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to apply this wallet adjustment?');"><i class="fas fa-check me-2"></i>Apply Adjustment</button>
                         <a href="{{ url_for('all_users') }}" class="btn btn-outline-secondary">Cancel</a>
                     </div>
                 </form>
-            </div>
-        </div>
-
-        <!-- Recent Wallet Transactions -->
-        <div class="card border-0 shadow-sm mt-4">
-            <div class="card-header bg-white border-bottom">
-                <h5 class="mb-0"><i class="fas fa-history text-muted me-2"></i>Recent Transactions</h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0 align-middle" id="txnTable">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Reason</th>
-                                <th class="text-end">Amount</th>
-                                <th class="text-end">Balance After</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-3">
-                                    <small>Transaction history is available in the user's wallet page.</small>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
             </div>
         </div>
     </div>

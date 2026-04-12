@@ -1,48 +1,54 @@
 {% extends "base.html" %}
 
-{% block title %}Lot Users - Parking Management{% endblock %}
+{% block title %}Lot Users - Admin - ParkEasy{% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="fas fa-users"></i> Users Who Parked in My Lots</h2>
+<h2 class="pk-page-title fade-in"><i class="fas fa-users"></i> Lot Users</h2>
 
-<div class="card">
+{% for lot in lots %}
+<div class="card mb-4 fade-in" style="border-left:4px solid var(--pk-primary);">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold"><i class="fas fa-building me-2 text-pk-primary"></i>{{ lot.name }}</h6>
+        <span class="badge bg-primary">{{ lot.users|length }} user{{ 's' if lot.users|length != 1 }}</span>
+    </div>
     <div class="card-body">
-        {% if users %}
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Vehicles</th>
-                            <th>Total Bookings</th>
-                            <th>Joined</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in users %}
-                        <tr>
-                            <td>{{ user.name }}</td>
-                            <td>{{ user.email }}</td>
-                            <td>
-                                {% if user.vehicles %}
-                                    {% for vehicle in user.vehicles %}
-                                        <span class="badge bg-primary me-1">{{ vehicle.vehicle_number }}</span>
-                                    {% endfor %}
-                                {% else %}
-                                    <span class="text-muted">No vehicles</span>
-                                {% endif %}
-                            </td>
-                            <td><span class="badge bg-success">{{ user.booking_count }}</span></td>
-                            <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        {% if lot.users %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 table-responsive-cards">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Bookings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in lot.users %}
+                    <tr>
+                        <td data-label="Name" class="fw-semibold">{{ user.name }}</td>
+                        <td data-label="Email" style="color:var(--pk-text-muted);">{{ user.email }}</td>
+                        <td data-label="Bookings"><span class="badge bg-success">{{ user.bookings_count }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-            <p class="text-muted">No users have parked in your lots yet</p>
+        <div class="pk-empty-state py-3">
+            <i class="fas fa-users" style="font-size:2rem;"></i>
+            <p>No users have booked at this lot yet</p>
+        </div>
         {% endif %}
     </div>
 </div>
+{% endfor %}
+
+{% if not lots %}
+<div class="card fade-in">
+    <div class="card-body pk-empty-state">
+        <i class="fas fa-building"></i>
+        <p>No parking lots found.</p>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

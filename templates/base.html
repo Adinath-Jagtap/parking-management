@@ -2,83 +2,761 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Parking Management System{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#E8590C">
+    <meta name="description" content="ParkEasy — Smart parking management. Find, book and manage parking spots effortlessly.">
+    <title>{% block title %}ParkEasy — Smart Parking{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════════════════
+           PARKEASY DESIGN SYSTEM v2 — Premium Orange Theme
+           Colors: Burnt Orange · Warm Amber · Off-White
+           ═══════════════════════════════════════════════════════ */
+        :root {
+            --pk-primary: #E8590C;
+            --pk-primary-hover: #D14A06;
+            --pk-primary-light: #FFF1EB;
+            --pk-primary-subtle: #FDE8DB;
+            --pk-secondary: #F59F00;
+            --pk-secondary-hover: #E09200;
+            --pk-secondary-light: #FFF8E1;
+            --pk-surface: #FFF8F1;
+            --pk-white: #FFFFFF;
+            --pk-text: #1A1A1A;
+            --pk-text-muted: #6B7280;
+            --pk-text-light: #9CA3AF;
+            --pk-border: #F0E6DB;
+            --pk-border-strong: #DDD0C0;
+            --pk-success: #16A34A;
+            --pk-success-light: #F0FFF4;
+            --pk-danger: #DC2626;
+            --pk-danger-light: #FEF2F2;
+            --pk-warning: #F59F00;
+            --pk-warning-light: #FFF8E1;
+            --pk-radius: 14px;
+            --pk-radius-sm: 10px;
+            --pk-radius-lg: 20px;
+            --pk-radius-xl: 24px;
+            --pk-shadow: 0 1px 4px rgba(232,89,12,0.06);
+            --pk-shadow-md: 0 4px 16px rgba(232,89,12,0.10);
+            --pk-shadow-lg: 0 8px 32px rgba(232,89,12,0.12);
+            --pk-shadow-hover: 0 12px 40px rgba(232,89,12,0.16);
+            --pk-transition: 0.2s ease;
+            --pk-footer-bg: #1A1A1A;
+        }
+
+        /* ── Global Reset ── */
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body {
+            background: var(--pk-surface);
+            color: var(--pk-text);
+            line-height: 1.6;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding-top: 88px; /* compensate for floating navbar */
+            padding-bottom: 0;
+        }
+
+        /* ═══════════════════════════════════════
+           BOOTSTRAP OVERRIDES — Zero Blue
+           ═══════════════════════════════════════ */
+
+        /* Buttons */
+        .btn {
+            min-height: 48px;
+            padding: 11px 22px;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: all var(--pk-transition);
+            will-change: transform;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-sm { min-height: 38px; padding: 7px 14px; font-size: 0.85rem; border-radius: 10px; }
+        .btn-lg { min-height: 56px; padding: 14px 28px; font-size: 1.05rem; border-radius: 14px; }
+
+        .btn-primary {
+            background: var(--pk-primary) !important;
+            border-color: var(--pk-primary) !important;
+            color: #fff !important;
+            font-weight: 700;
+        }
+        .btn-primary:hover, .btn-primary:focus {
+            background: var(--pk-primary-hover) !important;
+            border-color: var(--pk-primary-hover) !important;
+            box-shadow: 0 6px 20px rgba(232,89,12,0.35);
+            transform: translateY(-2px);
+        }
+        .btn-outline-primary {
+            color: var(--pk-primary) !important;
+            border-color: var(--pk-primary) !important;
+            font-weight: 700;
+        }
+        .btn-outline-primary:hover {
+            background: var(--pk-primary) !important;
+            color: #fff !important;
+            transform: translateY(-2px);
+        }
+        .btn-success { background: var(--pk-success) !important; border-color: var(--pk-success) !important; font-weight: 700; }
+        .btn-warning {
+            background: var(--pk-secondary) !important;
+            border-color: var(--pk-secondary) !important;
+            color: #fff !important;
+            font-weight: 700;
+        }
+        .btn-warning:hover { background: var(--pk-secondary-hover) !important; border-color: var(--pk-secondary-hover) !important; color: #fff !important; }
+        .btn-danger { background: var(--pk-danger) !important; border-color: var(--pk-danger) !important; font-weight: 700; }
+        .btn-secondary { background: #6B7280 !important; border-color: #6B7280 !important; font-weight: 700; }
+        .btn-outline-secondary { color: #6B7280 !important; border-color: #D1D5DB !important; font-weight: 700; }
+        .btn-outline-secondary:hover { background: #F3F4F6 !important; color: var(--pk-text) !important; border-color: #9CA3AF !important; }
+        .btn-outline-danger { color: var(--pk-danger) !important; border-color: var(--pk-danger) !important; font-weight: 700; }
+        .btn-outline-danger:hover { background: var(--pk-danger) !important; color: #fff !important; }
+        .btn-outline-warning { color: var(--pk-secondary) !important; border-color: var(--pk-secondary) !important; font-weight: 700; }
+        .btn-outline-warning:hover { background: var(--pk-secondary) !important; color: #fff !important; }
+        .btn-info { background: var(--pk-secondary) !important; border-color: var(--pk-secondary) !important; color: #fff !important; font-weight: 700; }
+
+        /* Links */
+        a { color: var(--pk-primary); }
+        a:hover { color: var(--pk-primary-hover); }
+
+        /* ── Cards — Hover Lift ── */
+        .card {
+            border: 1px solid var(--pk-border);
+            border-radius: var(--pk-radius-lg);
+            box-shadow: var(--pk-shadow);
+            background: var(--pk-white);
+            overflow: hidden;
+            transition: transform var(--pk-transition), box-shadow var(--pk-transition);
+            will-change: transform;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--pk-shadow-hover);
+        }
+        .card-header {
+            background: var(--pk-white);
+            border-bottom: 1px solid var(--pk-border);
+            padding: 18px 24px;
+            font-weight: 600;
+        }
+        .card-body { padding: 24px; }
+
+        /* ── Forms ── */
+        .form-control, .form-select {
+            border: 1.5px solid var(--pk-border-strong);
+            border-radius: 10px;
+            padding: 12px 16px;
+            min-height: 50px;
+            font-size: 0.95rem;
+            transition: border-color var(--pk-transition), box-shadow var(--pk-transition);
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--pk-primary);
+            box-shadow: 0 0 0 3px rgba(232,89,12,0.15);
+        }
+        .form-label { font-weight: 700; color: var(--pk-text); margin-bottom: 6px; font-size: 0.88rem; }
+        .form-text { color: var(--pk-text-muted); font-size: 0.82rem; }
+        .form-check-input:checked { background-color: var(--pk-primary); border-color: var(--pk-primary); }
+
+        /* ── Badges ── */
+        .badge { font-weight: 600; padding: 5px 10px; border-radius: 8px; font-size: 0.78rem; letter-spacing: 0.02em; }
+        .badge.bg-primary { background: var(--pk-primary) !important; }
+        .badge.bg-success { background: var(--pk-success) !important; }
+        .badge.bg-danger { background: var(--pk-danger) !important; }
+        .badge.bg-warning { background: var(--pk-secondary) !important; color: #fff !important; }
+        .badge.bg-info { background: var(--pk-secondary) !important; color: #fff !important; }
+        .badge.bg-secondary { background: #9CA3AF !important; }
+        .badge.bg-dark { background: var(--pk-text) !important; }
+        .badge.bg-light { background: var(--pk-primary-light) !important; color: var(--pk-primary) !important; }
+
+        /* ── Tables ── */
+        .table { --bs-table-bg: transparent; }
+        .table > thead { background: var(--pk-primary-light); }
+        .table > thead th {
+            font-weight: 700; font-size: 0.82rem; text-transform: uppercase;
+            letter-spacing: 0.04em; color: var(--pk-primary);
+            border-bottom: 2px solid var(--pk-border); padding: 14px 16px; white-space: nowrap;
+        }
+        .table > tbody td { padding: 14px 16px; vertical-align: middle; border-bottom: 1px solid var(--pk-border); }
+        .table-hover > tbody > tr:hover > * { background-color: var(--pk-primary-light); }
+        .table-striped > tbody > tr:nth-of-type(odd) > * { background-color: rgba(232,89,12,0.02); }
+        .table-dark { background: var(--pk-text) !important; }
+        .table-light, .table-secondary { background: var(--pk-primary-light) !important; }
+
+        /* ── Alerts ── */
+        .alert { border-radius: var(--pk-radius-sm); border: none; font-weight: 500; font-size: 0.9rem; }
+        .alert-success { background: var(--pk-success-light); color: #166534; border-left: 4px solid var(--pk-success); }
+        .alert-danger { background: var(--pk-danger-light); color: #991B1B; border-left: 4px solid var(--pk-danger); }
+        .alert-warning { background: var(--pk-secondary-light); color: #92400E; border-left: 4px solid var(--pk-secondary); }
+        .alert-info { background: var(--pk-primary-light); color: #9A3412; border-left: 4px solid var(--pk-primary); }
+        .alert-light { background: var(--pk-white); border: 1px solid var(--pk-border); color: var(--pk-text); }
+
+        /* ── Pagination ── */
+        .page-link {
+            color: var(--pk-primary); border-color: var(--pk-border); border-radius: var(--pk-radius-sm) !important;
+            margin: 0 2px; font-weight: 600; min-width: 44px; min-height: 44px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .page-item.active .page-link { background: var(--pk-primary); border-color: var(--pk-primary); }
+        .page-link:hover { background: var(--pk-primary-light); color: var(--pk-primary); }
+
+        /* ── Modal ── */
+        .modal-content { border-radius: var(--pk-radius-xl); border: none; box-shadow: var(--pk-shadow-lg); }
+        .modal-header { border-bottom: 1px solid var(--pk-border); }
+        .modal-footer { border-top: 1px solid var(--pk-border); }
+
+        /* ── Progress ── */
+        .progress { border-radius: var(--pk-radius-sm); background: var(--pk-primary-light); height: 10px; }
+        .progress-bar { background: var(--pk-primary) !important; border-radius: var(--pk-radius-sm); }
+
+        /* ── Dropdown ── */
+        .dropdown-menu {
+            border: 1px solid var(--pk-border); border-radius: var(--pk-radius);
+            box-shadow: var(--pk-shadow-lg); padding: 8px; background: var(--pk-white);
+        }
+        .dropdown-item { border-radius: var(--pk-radius-sm); padding: 10px 14px; font-weight: 500; transition: background var(--pk-transition); }
+        .dropdown-item:hover { background: var(--pk-primary-light); color: var(--pk-primary); }
+        .dropdown-divider { border-color: var(--pk-border); }
+
+        /* ── Input Group ── */
+        .input-group .btn-outline-secondary { border-color: var(--pk-border-strong) !important; }
+        .input-group .form-control { border-color: var(--pk-border-strong); }
+        .input-group-text { background: var(--pk-primary-light); border-color: var(--pk-border-strong); color: var(--pk-primary); font-weight: 600; }
+
+        /* ═══════════════════════════════════════
+           FLOATING NAVBAR — Glassmorphism
+           ═══════════════════════════════════════ */
+        .pk-navbar {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 48px);
+            max-width: 1400px;
+            z-index: 1050;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: var(--pk-radius-lg);
+            box-shadow: 0 4px 24px rgba(232,89,12,0.12);
+            padding: 0 20px;
+            border: 1px solid rgba(240,230,219,0.6);
+        }
+        .pk-navbar .container-fluid { padding: 0; }
+        .pk-navbar .navbar-brand {
+            color: var(--pk-text) !important;
+            font-weight: 900;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 0;
+            text-decoration: none;
+        }
+        .pk-navbar .navbar-brand .brand-icon {
+            font-size: 1rem;
+            background: var(--pk-primary);
+            color: #fff;
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pk-navbar .navbar-toggler {
+            border: 2px solid var(--pk-border-strong);
+            border-radius: var(--pk-radius-sm);
+            padding: 8px 12px;
+            color: var(--pk-text);
+            min-height: 44px;
+        }
+        .pk-navbar .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3e%3cpath stroke='%231A1A1A' stroke-linecap='round' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+        .pk-navbar .nav-link {
+            color: var(--pk-text) !important;
+            font-weight: 600;
+            font-size: 0.88rem;
+            padding: 10px 14px !important;
+            border-radius: var(--pk-radius-sm);
+            transition: all var(--pk-transition);
+            white-space: nowrap;
+            position: relative;
+        }
+        .pk-navbar .nav-link:hover {
+            color: var(--pk-primary) !important;
+            background: var(--pk-primary-light);
+        }
+        .pk-navbar .nav-link.active-link {
+            color: var(--pk-primary) !important;
+            background: var(--pk-primary-light);
+        }
+        .pk-navbar .nav-link.active-link::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--pk-primary);
+        }
+        .pk-navbar .nav-link .badge { font-size: 0.72rem; vertical-align: middle; }
+        .pk-navbar .dropdown-toggle::after { margin-left: 6px; }
+
+        /* Avatar button */
+        .pk-avatar {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: var(--pk-primary);
+            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800;
+            font-size: 0.82rem;
+            border: none;
+            cursor: pointer;
+            transition: all var(--pk-transition);
+            text-transform: uppercase;
+        }
+        .pk-avatar:hover { box-shadow: 0 0 0 3px var(--pk-primary-light); transform: scale(1.05); }
+
+        /* Wallet pill */
+        .pk-wallet-pill {
+            background: var(--pk-primary-light);
+            color: var(--pk-primary);
+            font-weight: 700;
+            font-size: 0.76rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        /* ═══════════════════════════════════════
+           MAIN CONTENT
+           ═══════════════════════════════════════ */
+        .pk-main { padding: 24px 0 60px; }
+
+        .pk-page-title {
+            font-weight: 900;
+            font-size: 1.75rem;
+            color: var(--pk-text);
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .pk-page-title i { color: var(--pk-primary); font-size: 1.4rem; }
+
+        /* ═══════════════════════════════════════
+           STAT CARDS v2 — Watermark Style
+           ═══════════════════════════════════════ */
+        .pk-stat-card {
+            background: var(--pk-white);
+            border: 1px solid var(--pk-border);
+            border-radius: var(--pk-radius-lg);
+            padding: 24px;
+            box-shadow: var(--pk-shadow);
+            transition: transform var(--pk-transition), box-shadow var(--pk-transition);
+            will-change: transform;
+            position: relative;
+            overflow: hidden;
+        }
+        .pk-stat-card::before {
+            content: '';
+            position: absolute;
+            right: -8px;
+            bottom: -8px;
+            font-size: 5rem;
+            opacity: 0.06;
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: var(--pk-primary);
+            pointer-events: none;
+        }
+        .pk-stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--pk-shadow-hover);
+        }
+        .pk-stat-card .stat-value {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--pk-text);
+            line-height: 1.1;
+            position: relative;
+            z-index: 1;
+        }
+        .pk-stat-card .stat-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--pk-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: relative;
+            z-index: 1;
+        }
+        .pk-stat-card .stat-icon {
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem;
+            position: relative; z-index: 1;
+            flex-shrink: 0;
+        }
+
+        /* Stat card accents — background tint, not border */
+        .pk-stat-card.accent-orange { background: linear-gradient(135deg, #FFF8F1 0%, #FFF1EB 100%); }
+        .pk-stat-card.accent-orange .stat-icon { background: var(--pk-primary-light); color: var(--pk-primary); }
+        .pk-stat-card.accent-orange::before { content: '\f1b9'; color: var(--pk-primary); }
+
+        .pk-stat-card.accent-amber { background: linear-gradient(135deg, #FFFDF5 0%, #FFF8E1 100%); }
+        .pk-stat-card.accent-amber .stat-icon { background: var(--pk-secondary-light); color: var(--pk-secondary); }
+        .pk-stat-card.accent-amber::before { content: '\f156'; color: var(--pk-secondary); }
+
+        .pk-stat-card.accent-green { background: linear-gradient(135deg, #F7FFF7 0%, #F0FFF4 100%); }
+        .pk-stat-card.accent-green .stat-icon { background: var(--pk-success-light); color: var(--pk-success); }
+        .pk-stat-card.accent-green::before { content: '\f058'; color: var(--pk-success); }
+
+        .pk-stat-card.accent-red { background: linear-gradient(135deg, #FFFAFA 0%, #FEF2F2 100%); }
+        .pk-stat-card.accent-red .stat-icon { background: var(--pk-danger-light); color: var(--pk-danger); }
+        .pk-stat-card.accent-red::before { content: '\f071'; color: var(--pk-danger); }
+
+        /* Default (no accent) */
+        .pk-stat-card:not([class*="accent-"]) .stat-icon { background: var(--pk-primary-light); color: var(--pk-primary); }
+        .pk-stat-card:not([class*="accent-"])::before { content: '\f201'; color: var(--pk-primary); }
+
+        /* Card header variants */
+        .pk-card-header-orange { background: var(--pk-primary) !important; color: #fff !important; border-bottom: none; }
+        .pk-card-header-amber { background: var(--pk-secondary) !important; color: #fff !important; border-bottom: none; }
+        .pk-card-header-green { background: var(--pk-success) !important; color: #fff !important; border-bottom: none; }
+
+        /* Utility classes */
+        .text-pk-primary { color: var(--pk-primary) !important; }
+        .text-pk-secondary { color: var(--pk-secondary) !important; }
+        .bg-pk-primary { background: var(--pk-primary) !important; }
+        .bg-pk-surface { background: var(--pk-surface) !important; }
+        .bg-pk-light { background: var(--pk-primary-light) !important; }
+
+        /* ═══════════════════════════════════════
+           WELCOME BANNER — CSS Car Animation
+           ═══════════════════════════════════════ */
+        .pk-welcome-banner {
+            background: linear-gradient(135deg, var(--pk-primary) 0%, var(--pk-primary-hover) 100%);
+            border-radius: var(--pk-radius-xl);
+            padding: 32px;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 28px;
+        }
+        .pk-welcome-banner h2 { font-weight: 900; font-size: 1.5rem; margin-bottom: 4px; }
+        .pk-welcome-banner p { opacity: 0.85; margin: 0; font-size: 0.9rem; }
+
+        /* CSS Car in banner */
+        .pk-css-car-track {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            overflow: hidden;
+        }
+        .pk-css-car {
+            position: absolute;
+            bottom: 8px;
+            animation: driveCar 8s linear infinite;
+        }
+        .pk-css-car .car-body { width: 50px; height: 18px; background: #fff; border-radius: 6px 10px 2px 2px; position: relative; }
+        .pk-css-car .car-roof { width: 28px; height: 12px; background: rgba(255,255,255,0.85); border-radius: 6px 6px 0 0; position: absolute; top: -12px; left: 8px; }
+        .pk-css-car .car-wheel {
+            width: 10px; height: 10px; background: var(--pk-text);
+            border-radius: 50%; position: absolute; bottom: -5px;
+            animation: spinWheel 0.4s linear infinite;
+        }
+        .pk-css-car .car-wheel-front { left: 6px; }
+        .pk-css-car .car-wheel-rear { right: 6px; }
+        @keyframes driveCar {
+            0% { left: -60px; }
+            100% { left: calc(100% + 60px); }
+        }
+        @keyframes spinWheel {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* ═══════════════════════════════════════
+           MOBILE BOTTOM NAV
+           ═══════════════════════════════════════ */
+        .pk-bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--pk-white);
+            border-top: 1px solid var(--pk-border);
+            z-index: 1040;
+            padding: 6px 0 env(safe-area-inset-bottom, 8px);
+            box-shadow: 0 -2px 16px rgba(0,0,0,0.08);
+        }
+        .pk-bottom-nav .bottom-nav-items {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .pk-bottom-nav .bottom-nav-link {
+            display: flex; flex-direction: column; align-items: center;
+            text-decoration: none; color: var(--pk-text-muted);
+            font-size: 0.65rem; font-weight: 700;
+            padding: 6px 14px; border-radius: 20px;
+            transition: all var(--pk-transition);
+            min-width: 64px; min-height: 48px;
+            justify-content: center;
+        }
+        .pk-bottom-nav .bottom-nav-link i { font-size: 1.3rem; margin-bottom: 3px; }
+        .pk-bottom-nav .bottom-nav-link.active {
+            color: var(--pk-primary);
+            background: var(--pk-primary-light);
+        }
+        .pk-bottom-nav .bottom-nav-link:hover { color: var(--pk-primary); }
+
+        /* ═══════════════════════════════════════
+           DARK FOOTER — 3 Column
+           ═══════════════════════════════════════ */
+        .pk-footer {
+            background: var(--pk-footer-bg);
+            border-top: 3px solid var(--pk-primary);
+            padding: 48px 0 24px;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.88rem;
+        }
+        .pk-footer h6 { color: #fff; font-weight: 800; font-size: 0.9rem; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .pk-footer a { color: var(--pk-primary); text-decoration: none; transition: color var(--pk-transition); }
+        .pk-footer a:hover { color: var(--pk-secondary); }
+        .pk-footer .footer-links { list-style: none; padding: 0; margin: 0; }
+        .pk-footer .footer-links li { margin-bottom: 8px; }
+        .pk-footer .footer-links a { color: rgba(255,255,255,0.6); }
+        .pk-footer .footer-links a:hover { color: var(--pk-primary); }
+        .pk-footer .footer-brand { font-weight: 900; font-size: 1.2rem; color: #fff; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .pk-footer .footer-brand i { color: var(--pk-primary); }
+        .pk-footer .footer-bottom { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; margin-top: 32px; text-align: center; color: rgba(255,255,255,0.4); font-size: 0.82rem; }
+
+        /* ═══════════════════════════════════════
+           EMPTY STATE
+           ═══════════════════════════════════════ */
+        .pk-empty-state { text-align: center; padding: 48px 20px; color: var(--pk-text-muted); }
+        .pk-empty-state i { font-size: 3.5rem; opacity: 0.2; color: var(--pk-primary); margin-bottom: 16px; display: block; }
+        .pk-empty-state p { font-weight: 500; margin: 0; }
+
+        /* ═══════════════════════════════════════
+           ANIMATIONS
+           ═══════════════════════════════════════ */
+        .fade-in { animation: fadeInUp 0.45s ease; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Float animation for feature icons */
+        .pk-float { animation: pkFloat 3s ease-in-out infinite; }
+        @keyframes pkFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* ═══════════════════════════════════════
+           RESPONSIVE — Mobile First
+           ═══════════════════════════════════════ */
+        @media (max-width: 767px) {
+            body { padding-top: 76px; }
+            .pk-navbar { top: 8px; width: calc(100% - 24px); padding: 0 14px; }
+            .pk-bottom-nav { display: block; }
+            body { padding-bottom: 80px; }
+            .pk-main { padding: 16px 0 80px; }
+            .pk-page-title { font-size: 1.3rem; margin-bottom: 20px; }
+            .pk-footer { display: none; }
+            .pk-welcome-banner { padding: 24px 20px; }
+            .pk-welcome-banner h2 { font-size: 1.2rem; }
+
+            /* Mobile card-based table override */
+            .table-responsive-cards thead { display: none !important; }
+            .table-responsive-cards tbody tr {
+                display: block;
+                background: var(--pk-white);
+                border: 1px solid var(--pk-border);
+                border-radius: var(--pk-radius);
+                margin-bottom: 12px;
+                padding: 16px;
+                box-shadow: var(--pk-shadow);
+            }
+            .table-responsive-cards tbody td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                border: none;
+                border-bottom: 1px solid var(--pk-border);
+                font-size: 0.9rem;
+                gap: 8px;
+            }
+            .table-responsive-cards tbody td:last-child { border-bottom: none; padding-bottom: 0; }
+            .table-responsive-cards tbody td::before {
+                content: attr(data-label);
+                font-weight: 700; color: var(--pk-text-muted); font-size: 0.75rem;
+                text-transform: uppercase; letter-spacing: 0.04em;
+                flex-shrink: 0; min-width: 90px;
+            }
+
+            .pk-stat-card { padding: 18px; }
+            .pk-stat-card .stat-value { font-size: 1.75rem; }
+            .pk-stat-card::before { font-size: 3.5rem; }
+            .card-body { padding: 16px; }
+            .card-header { padding: 14px 16px; }
+            .card:hover { transform: none; } /* Disable hover lift on touch */
+        }
+
+        @media (min-width: 768px) {
+            .pk-main { padding: 32px 0 60px; }
+            .pk-page-title { font-size: 1.75rem; }
+        }
+
+        @media (min-width: 992px) {
+            .pk-navbar .nav-link { font-size: 0.85rem; padding: 8px 12px !important; }
+        }
+
+        /* ═══════════════════════════════════════
+           REDUCED MOTION
+           ═══════════════════════════════════════ */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            .card:hover { transform: none; }
+            .pk-stat-card:hover { transform: none; }
+            .btn:hover { transform: none; }
+        }
+
+        {% block extra_css %}{% endblock %}
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <!-- ═══ FLOATING NAVBAR ═══ -->
+    <nav class="navbar navbar-expand-lg pk-navbar">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-parking"></i> Parking System
+                <span class="brand-icon"><i class="fas fa-parking"></i></span>
+                <span>ParkEasy</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
                     {% if current_user.is_authenticated %}
                         {% if current_user.role == 'user' %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_dashboard') }}">Dashboard</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('parking_lots') }}"><i class="fas fa-building me-1"></i>Lots / Pre-book</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('my_bookings') }}">My Bookings</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_subscriptions') }}">Subscriptions</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_wallet') }}"><i class="fas fa-wallet"></i> Wallet <span class="badge bg-success ms-1">₹{{ "%.2f"|format(wallet_balance|default(0.0)) }}</span></a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('my_vehicles') }}">My Vehicles</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('invoices') }}">Invoices</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_analytics') }}"><i class="fas fa-chart-line"></i> Analytics</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_dashboard') }}"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('parking_lots') }}"><i class="fas fa-building me-1"></i>Lots</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('my_bookings') }}"><i class="fas fa-calendar-check me-1"></i>Bookings</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_wallet') }}"><i class="fas fa-wallet me-1"></i>Wallet</a></li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-h me-1"></i>More</a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{{ url_for('my_vehicles') }}"><i class="fas fa-car me-2"></i>Vehicles</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('user_subscriptions') }}"><i class="fas fa-id-card me-2"></i>Plans</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('invoices') }}"><i class="fas fa-file-invoice me-2"></i>Invoices</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('user_analytics') }}"><i class="fas fa-chart-line me-2"></i>Analytics</a></li>
+                                </ul>
+                            </li>
                         {% elif current_user.role == 'admin' %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_slots') }}">Manage Slots</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_subscriptions') }}">Subscriptions</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('lot_users') }}">Lot Users</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_watchman_audit') }}">Watchman Audit</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_invoices') }}">Invoices</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_analytics') }}"><i class="fas fa-chart-line"></i> Analytics</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_dashboard') }}"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_slots') }}"><i class="fas fa-parking me-1"></i>Slots</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_invoices') }}"><i class="fas fa-file-invoice me-1"></i>Invoices</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_analytics') }}"><i class="fas fa-chart-line me-1"></i>Analytics</a></li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-h me-1"></i>More</a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{{ url_for('admin_subscriptions') }}"><i class="fas fa-id-card me-2"></i>Plans</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('lot_users') }}"><i class="fas fa-users me-2"></i>Users</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin_watchman_audit') }}"><i class="fas fa-clipboard-check me-2"></i>Audit</a></li>
+                                </ul>
+                            </li>
                         {% elif current_user.role == 'super_admin' %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('super_admin_dashboard') }}">Dashboard</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_admins') }}">Manage Admins</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('all_users') }}">All Users</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('all_lots') }}">All Lots</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('super_admin_unpaid_invoices') }}">Unpaid Invoices</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('super_admin_watchman_collections') }}">Watchman Collections</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('platform_analytics') }}">Analytics</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('super_admin_dashboard') }}"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_admins') }}"><i class="fas fa-user-shield me-1"></i>Admins</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('all_lots') }}"><i class="fas fa-building me-1"></i>Lots</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('platform_analytics') }}"><i class="fas fa-chart-bar me-1"></i>Analytics</a></li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-h me-1"></i>More</a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{{ url_for('all_users') }}"><i class="fas fa-users me-2"></i>Users</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('super_admin_unpaid_invoices') }}"><i class="fas fa-file-invoice me-2"></i>Unpaid</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('super_admin_watchman_collections') }}"><i class="fas fa-hand-holding-usd me-2"></i>Collections</a></li>
+                                </ul>
+                            </li>
                         {% elif current_user.role == 'watchman' %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('watchman_dashboard') }}">Dashboard</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('watchman_collections_page') }}"><i class="fas fa-hand-holding-usd me-1"></i>Collections Log</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('watchman_dashboard') }}"><i class="fas fa-qrcode me-1"></i>Scanner</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('watchman_collections_page') }}"><i class="fas fa-hand-holding-usd me-1"></i>Collections</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-1"></i>Logout</a></li>
                         {% endif %}
+
                         {% if current_user.role != 'watchman' %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user"></i> {{ current_user.name }}
-                            </a>
-                            <ul class="dropdown-menu">
-                                {% if current_user.role == 'admin' %}
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_profile') }}">Profile</a></li>
-                                {% elif current_user.role == 'user' %}
-                                    <li><a class="dropdown-item" href="{{ url_for('user_profile') }}">Profile</a></li>
-                                {% endif %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
-                            </ul>
+                        <!-- Wallet pill + Avatar -->
+                        <li class="nav-item d-flex align-items-center gap-2 ms-lg-2">
+                            {% if current_user.role == 'user' %}
+                            <span class="pk-wallet-pill d-none d-lg-inline-flex">
+                                <i class="fas fa-wallet me-1"></i>₹{{ "%.0f"|format(wallet_balance|default(0.0)) }}
+                            </span>
+                            {% endif %}
+                            <div class="dropdown">
+                                <button class="pk-avatar" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    {{ current_user.name[:2] }}
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li class="px-3 py-2">
+                                        <div class="fw-bold">{{ current_user.name }}</div>
+                                        <small class="text-muted">{{ current_user.email }}</small>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    {% if current_user.role == 'admin' %}
+                                        <li><a class="dropdown-item" href="{{ url_for('admin_profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                    {% elif current_user.role == 'user' %}
+                                        <li><a class="dropdown-item" href="{{ url_for('user_profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                </ul>
+                            </div>
                         </li>
                         {% endif %}
                     {% else %}
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Register</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt me-1"></i>Login</a></li>
+                        <li class="nav-item ms-lg-1">
+                            <a class="btn btn-primary btn-sm" href="{{ url_for('register') }}" style="min-height:40px;">
+                                <i class="fas fa-user-plus me-1"></i>Register
+                            </a>
+                        </li>
                     {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
+    <!-- ═══ MAIN CONTENT ═══ -->
+    <div class="container pk-main">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    <div class="alert alert-{{ category }} alert-dismissible fade show fade-in" role="alert">
+                        {% if category == 'success' %}<i class="fas fa-check-circle me-2"></i>
+                        {% elif category == 'danger' %}<i class="fas fa-exclamation-circle me-2"></i>
+                        {% elif category == 'warning' %}<i class="fas fa-exclamation-triangle me-2"></i>
+                        {% else %}<i class="fas fa-info-circle me-2"></i>{% endif %}
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
@@ -89,31 +767,107 @@
         {% block content %}{% endblock %}
     </div>
 
-    <footer class="bg-light text-center py-3 mt-5">
-        <p class="mb-0">&copy; 2024 Parking Management System. All rights reserved.</p>
+    <!-- ═══ MOBILE BOTTOM NAV ═══ -->
+    {% if current_user.is_authenticated %}
+    <div class="pk-bottom-nav">
+        <div class="bottom-nav-items">
+            {% if current_user.role == 'user' %}
+                <a href="{{ url_for('user_dashboard') }}" class="bottom-nav-link"><i class="fas fa-home"></i>Home</a>
+                <a href="{{ url_for('parking_lots') }}" class="bottom-nav-link"><i class="fas fa-building"></i>Lots</a>
+                <a href="{{ url_for('my_bookings') }}" class="bottom-nav-link"><i class="fas fa-calendar-check"></i>Bookings</a>
+                <a href="{{ url_for('user_wallet') }}" class="bottom-nav-link"><i class="fas fa-wallet"></i>Wallet</a>
+            {% elif current_user.role == 'admin' %}
+                <a href="{{ url_for('admin_dashboard') }}" class="bottom-nav-link"><i class="fas fa-home"></i>Home</a>
+                <a href="{{ url_for('manage_slots') }}" class="bottom-nav-link"><i class="fas fa-parking"></i>Slots</a>
+                <a href="{{ url_for('admin_invoices') }}" class="bottom-nav-link"><i class="fas fa-file-invoice"></i>Invoices</a>
+                <a href="{{ url_for('admin_analytics') }}" class="bottom-nav-link"><i class="fas fa-chart-line"></i>Analytics</a>
+            {% elif current_user.role == 'super_admin' %}
+                <a href="{{ url_for('super_admin_dashboard') }}" class="bottom-nav-link"><i class="fas fa-home"></i>Home</a>
+                <a href="{{ url_for('manage_admins') }}" class="bottom-nav-link"><i class="fas fa-user-shield"></i>Admins</a>
+                <a href="{{ url_for('all_lots') }}" class="bottom-nav-link"><i class="fas fa-building"></i>Lots</a>
+                <a href="{{ url_for('platform_analytics') }}" class="bottom-nav-link"><i class="fas fa-chart-bar"></i>Analytics</a>
+            {% elif current_user.role == 'watchman' %}
+                <a href="{{ url_for('watchman_dashboard') }}" class="bottom-nav-link"><i class="fas fa-qrcode"></i>Scanner</a>
+                <a href="{{ url_for('watchman_collections_page') }}" class="bottom-nav-link"><i class="fas fa-hand-holding-usd"></i>Collections</a>
+                <a href="{{ url_for('logout') }}" class="bottom-nav-link"><i class="fas fa-sign-out-alt"></i>Logout</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="pk-footer">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="footer-brand">
+                        <i class="fas fa-parking"></i> ParkEasy
+                    </div>
+                    <p style="margin-bottom:16px;">Smart parking, simplified. Find, book and manage parking spots effortlessly.</p>
+                    <p style="color:rgba(255,255,255,0.35);font-size:0.8rem;">&copy; 2024 ParkEasy. All rights reserved.</p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Quick Links</h6>
+                    <ul class="footer-links">
+                        {% if current_user.is_authenticated %}
+                            {% if current_user.role == 'user' %}
+                                <li><a href="{{ url_for('user_dashboard') }}">Dashboard</a></li>
+                                <li><a href="{{ url_for('parking_lots') }}">Parking Lots</a></li>
+                                <li><a href="{{ url_for('my_bookings') }}">My Bookings</a></li>
+                                <li><a href="{{ url_for('user_wallet') }}">Wallet</a></li>
+                            {% elif current_user.role == 'admin' %}
+                                <li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+                                <li><a href="{{ url_for('manage_slots') }}">Manage Slots</a></li>
+                                <li><a href="{{ url_for('admin_invoices') }}">Invoices</a></li>
+                                <li><a href="{{ url_for('admin_analytics') }}">Analytics</a></li>
+                            {% elif current_user.role == 'super_admin' %}
+                                <li><a href="{{ url_for('super_admin_dashboard') }}">Dashboard</a></li>
+                                <li><a href="{{ url_for('manage_admins') }}">Manage Admins</a></li>
+                                <li><a href="{{ url_for('all_lots') }}">All Lots</a></li>
+                                <li><a href="{{ url_for('platform_analytics') }}">Analytics</a></li>
+                            {% endif %}
+                        {% else %}
+                            <li><a href="{{ url_for('login') }}">Login</a></li>
+                            <li><a href="{{ url_for('register') }}">Register</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Support</h6>
+                    <ul class="footer-links">
+                        <li><a href="mailto:support@parkeasy.in"><i class="fas fa-envelope me-2"></i>support@parkeasy.in</a></li>
+                        <li><a href="tel:+919999999999"><i class="fas fa-phone me-2"></i>+91 99999 99999</a></li>
+                        {% if current_user.is_authenticated and current_user.role != 'watchman' %}
+                            {% if current_user.role == 'admin' %}
+                                <li><a href="{{ url_for('admin_profile') }}"><i class="fas fa-user me-2"></i>My Profile</a></li>
+                            {% elif current_user.role == 'user' %}
+                                <li><a href="{{ url_for('user_profile') }}"><i class="fas fa-user me-2"></i>My Profile</a></li>
+                            {% endif %}
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                Made with <i class="fas fa-heart" style="color:var(--pk-primary);"></i> by ParkEasy Team
+            </div>
+        </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
-        // Password visibility toggle for all password fields
         document.addEventListener('DOMContentLoaded', function() {
+            // Password visibility toggle
             document.querySelectorAll('input[type="password"]:not([readonly])').forEach(function(input) {
-                // Wrap in input-group if not already
                 const parent = input.parentElement;
                 if (!parent.classList.contains('input-group')) {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'input-group';
                     parent.insertBefore(wrapper, input);
                     wrapper.appendChild(input);
-                    
-                    // Move invalid-feedback outside input-group so Bootstrap shows it properly
                     const feedback = parent.querySelector('.invalid-feedback');
-                    if (feedback) {
-                        wrapper.after(feedback);
-                    }
+                    if (feedback) wrapper.after(feedback);
                 }
-                
                 const group = input.parentElement;
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -129,6 +883,20 @@
                     }
                 });
                 group.appendChild(btn);
+            });
+
+            // Highlight active nav links
+            var currentPath = window.location.pathname;
+            document.querySelectorAll('.pk-navbar .nav-link').forEach(function(link) {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active-link');
+                }
+            });
+            // Bottom nav active
+            document.querySelectorAll('.bottom-nav-link').forEach(function(link) {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
             });
         });
     </script>

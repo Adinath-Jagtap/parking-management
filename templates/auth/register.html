@@ -1,71 +1,129 @@
 {% extends "base.html" %}
 
-{% block title %}Register - Parking Management{% endblock %}
+{% block title %}Register - ParkEasy{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pk-auth-wrapper { min-height: calc(100vh - 120px); display: flex; align-items: center; margin: -24px 0; }
+    .pk-auth-panel {
+        background: var(--pk-primary);
+        border-radius: var(--pk-radius-xl);
+        padding: 48px 40px;
+        color: #fff;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        min-height: 580px;
+        position: relative; overflow: hidden;
+    }
+    .pk-auth-panel h2 { font-weight: 900; font-size: 2rem; text-align: center; position: relative; z-index: 1; }
+    .pk-auth-panel p { opacity: 0.8; text-align: center; position: relative; z-index: 1; max-width: 300px; }
+    .pk-auth-panel .auth-icon { font-size: 4rem; opacity: 0.15; margin-bottom: 24px; }
+    .pk-auth-car-track { position: absolute; bottom: 0; left: 0; right: 0; height: 50px; overflow: hidden; }
+    .pk-auth-car {
+        position: absolute; bottom: 10px;
+        animation: driveCar 7s linear infinite;
+    }
+    .pk-auth-car .ab { width: 60px; height: 22px; background: rgba(255,255,255,0.9); border-radius: 6px 12px 2px 2px; position: relative; }
+    .pk-auth-car .ar { width: 32px; height: 14px; background: rgba(255,255,255,0.7); border-radius: 6px 6px 0 0; position: absolute; top: -14px; left: 10px; }
+    .pk-auth-car .aw {
+        width: 11px; height: 11px; background: var(--pk-text); border-radius: 50%;
+        position: absolute; bottom: -5px; animation: spinWheel 0.35s linear infinite;
+    }
+    .pk-auth-car .aw1 { left: 8px; }
+    .pk-auth-car .aw2 { right: 8px; }
+    .pk-auth-road { position: absolute; bottom: 0; width: 100%; height: 20px; background: rgba(0,0,0,0.15); border-radius: 2px; }
+    .pk-auth-form-panel { display: flex; align-items: center; justify-content: center; }
+    .pk-auth-form { max-width: 440px; width: 100%; }
+    .pk-auth-form .form-header { text-align: center; margin-bottom: 28px; }
+    .pk-auth-form .form-header h3 { font-weight: 900; font-size: 1.6rem; }
+    .pk-auth-form .form-header p { color: var(--pk-text-muted); }
+    @media (max-width: 991px) {
+        .pk-auth-panel { display: none !important; }
+        .pk-auth-wrapper { min-height: auto; padding: 32px 0; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0"><i class="fas fa-user-plus"></i> Register</h4>
+<div class="pk-auth-wrapper fade-in">
+    <div class="row g-4 w-100 align-items-stretch">
+        <div class="col-lg-5 d-none d-lg-flex">
+            <div class="pk-auth-panel w-100">
+                <div class="auth-icon"><i class="fas fa-user-plus"></i></div>
+                <h2>Join<br>ParkEasy</h2>
+                <p class="mt-3">Create your account and start parking smarter today. It takes less than a minute.</p>
+                <div class="pk-auth-car-track">
+                    <div class="pk-auth-road"></div>
+                    <div class="pk-auth-car">
+                        <div class="ab"><div class="ar"></div></div>
+                        <div class="aw aw1"></div>
+                        <div class="aw aw2"></div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
+        </div>
+        <div class="col-lg-7 pk-auth-form-panel">
+            <div class="pk-auth-form">
+                <div class="form-header">
+                    <h3>Create Account</h3>
+                    <p>Get started with ParkEasy</p>
+                </div>
                 <form method="POST" action="{{ url_for('register') }}">
                     {{ form.hidden_tag() }}
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
+
                     <div class="mb-3">
                         {{ form.name.label(class="form-label") }}
-                        {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                        {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="Enter your full name") }}
                         {% if form.name.errors %}
                             <div class="invalid-feedback">
                                 {% for error in form.name.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
                     </div>
-                    
+
                     <div class="mb-3">
                         {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="Enter your email") }}
                         {% if form.email.errors %}
                             <div class="invalid-feedback">
                                 {% for error in form.email.errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
                     </div>
-                    
-                    <div class="mb-3">
-                        {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else "")) }}
-                        {% if form.password.errors %}
-                            <div class="invalid-feedback">
-                                {% for error in form.password.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="Create a password") }}
+                            {% if form.password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.confirm_password.label(class="form-label") }}
+                            {{ form.confirm_password(class="form-control" + (" is-invalid" if form.confirm_password.errors else ""), placeholder="Re-enter password") }}
+                            {% if form.confirm_password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.confirm_password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        {{ form.confirm_password.label(class="form-label") }}
-                        {{ form.confirm_password(class="form-control" + (" is-invalid" if form.confirm_password.errors else "")) }}
-                        {% if form.confirm_password.errors %}
-                            <div class="invalid-feedback">
-                                {% for error in form.confirm_password.errors %}{{ error }}{% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
+
+                    <div class="mb-4">
                         {{ form.role.label(class="form-label") }}
                         {{ form.role(class="form-select") }}
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-user-plus"></i> Register
+
+                    <button type="submit" class="btn btn-primary w-100 btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Create Account
                     </button>
                 </form>
-                
-                <div class="mt-3 text-center">
-                    <span>Already have an account? <a href="{{ url_for('login') }}">Login here</a></span>
+
+                <div class="mt-4 text-center">
+                    <span style="color:var(--pk-text-muted);">Already have an account? <a href="{{ url_for('login') }}" class="fw-bold">Login here</a></span>
                 </div>
             </div>
         </div>

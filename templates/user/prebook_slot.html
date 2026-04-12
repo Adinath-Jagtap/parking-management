@@ -1,35 +1,35 @@
 {% extends "base.html" %}
 
-{% block title %}Pre-book Slot - {{ lot.name }} - Parking Management{% endblock %}
+{% block title %}Pre-book Slot - {{ lot.name }} - ParkEasy{% endblock %}
 
 {% block content %}
-<h2 class="mb-4"><i class="fas fa-calendar-check"></i> Pre-book Parking Slot</h2>
+<h2 class="pk-page-title fade-in"><i class="fas fa-calendar-check"></i> Pre-book Parking Slot</h2>
 
-<div class="row">
+<div class="row g-3 fade-in">
     <div class="col-md-6">
-        <div class="card mb-3">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-building"></i> {{ lot.name }}</h5>
+        <div class="card mb-3" style="border-top:3px solid var(--pk-primary);">
+            <div class="card-header pk-card-header-orange">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-building me-2"></i>{{ lot.name }}</h6>
             </div>
             <div class="card-body">
-                <p><i class="fas fa-map-marker-alt"></i> <strong>Address:</strong> {{ lot.address }}</p>
-                <p><i class="fas fa-mail-bulk"></i> <strong>Pincode:</strong> {{ lot.pincode }}</p>
-                <hr>
-                <h6>Pre-book Slots Available:</h6>
-                <div class="row text-center mt-3">
+                <p class="mb-1"><i class="fas fa-map-marker-alt me-2 text-pk-primary"></i><strong>Address:</strong> {{ lot.address }}</p>
+                <p class="mb-3"><i class="fas fa-mail-bulk me-2 text-pk-primary"></i><strong>Pincode:</strong> {{ lot.pincode }}</p>
+                <hr style="border-color:var(--pk-border);">
+                <h6 class="fw-bold mb-3">Pre-book Slots Available:</h6>
+                <div class="row text-center g-2">
                     <div class="col-6">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h3 class="text-success">{{ prebook_2w }}</h3>
-                                <small>2-Wheeler Slots</small>
+                        <div class="card" style="background:var(--pk-primary-light);border-color:var(--pk-border);">
+                            <div class="card-body py-3">
+                                <h3 class="fw-bold mb-0" style="color:var(--pk-success);">{{ prebook_2w }}</h3>
+                                <small class="fw-semibold" style="color:var(--pk-text-muted);">2-Wheeler</small>
                             </div>
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h3 class="text-success">{{ prebook_4w }}</h3>
-                                <small>4-Wheeler Slots</small>
+                        <div class="card" style="background:var(--pk-primary-light);border-color:var(--pk-border);">
+                            <div class="card-body py-3">
+                                <h3 class="fw-bold mb-0" style="color:var(--pk-success);">{{ prebook_4w }}</h3>
+                                <small class="fw-semibold" style="color:var(--pk-text-muted);">4-Wheeler</small>
                             </div>
                         </div>
                     </div>
@@ -38,20 +38,20 @@
         </div>
 
         <!-- Wallet Balance Card -->
-        <div class="card mb-3" id="wallet-card">
-            <div class="card-body d-flex justify-content-between align-items-center">
+        <div class="card mb-3" id="wallet-card" style="border-left:4px solid var(--pk-primary);">
+            <div class="card-body d-flex justify-content-between align-items-center py-3">
                 <div>
-                    <h6 class="mb-0"><i class="fas fa-wallet"></i> Wallet Balance</h6>
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-wallet me-2 text-pk-primary"></i>Wallet Balance</h6>
                 </div>
-                <h5 class="mb-0" id="wallet-display">₹{{ "%.2f"|format(wallet_balance) }}</h5>
+                <h5 class="mb-0 fw-bold" id="wallet-display" style="color:var(--pk-primary);">₹{{ "%.2f"|format(wallet_balance) }}</h5>
             </div>
         </div>
 
         <!-- Info Card -->
-        <div class="card bg-light">
+        <div class="card" style="background:var(--pk-primary-light);border-color:var(--pk-border);">
             <div class="card-body">
-                <h6><i class="fas fa-info-circle"></i> Pre-booking Policy</h6>
-                <ul class="small mb-0">
+                <h6 class="fw-bold"><i class="fas fa-info-circle me-2 text-pk-primary"></i>Pre-booking Policy</h6>
+                <ul class="small mb-0" style="color:var(--pk-text);">
                     <li>Full estimated fee is held from your wallet at booking time</li>
                     <li>Check in within <strong>20 minutes</strong> of your start time</li>
                     <li><strong>No-show:</strong> 20-minute fee charged, remaining amount refunded</li>
@@ -63,9 +63,9 @@
     </div>
 
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="fas fa-calendar-plus"></i> Reserve Your Slot</h5>
+        <div class="card" style="border-top:3px solid var(--pk-success);">
+            <div class="card-header pk-card-header-green">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-calendar-plus me-2"></i>Reserve Your Slot</h6>
             </div>
             <div class="card-body">
                 {% if prebook_2w > 0 or prebook_4w > 0 %}
@@ -76,7 +76,7 @@
                         <div class="mb-3">
                             {{ form.vehicle_id.label(class="form-label") }}
                             {{ form.vehicle_id(class="form-select", id="vehicle_id") }}
-                            <small class="form-text text-muted">A prebook slot matching your vehicle type will be assigned</small>
+                            <small class="form-text">A prebook slot matching your vehicle type will be assigned</small>
                         </div>
 
                         <div class="mb-3">
@@ -93,7 +93,7 @@
 
                         <!-- Fee Estimate -->
                         <div id="fee-estimate" class="alert alert-info d-none">
-                            <i class="fas fa-calculator"></i>
+                            <i class="fas fa-calculator me-1"></i>
                             Estimated fee: <strong id="fee-amount">₹0.00</strong>
                             <br>
                             <small><span id="fee-hours">0</span> hours &times; ₹<span id="fee-rate">0</span>/hr</small>
@@ -101,26 +101,26 @@
 
                         <!-- Insufficient Balance Warning -->
                         <div id="balance-warning" class="alert alert-danger d-none">
-                            <i class="fas fa-exclamation-triangle"></i>
+                            <i class="fas fa-exclamation-triangle me-1"></i>
                             <strong>Insufficient wallet balance!</strong>
                             <span id="balance-shortfall"></span>
                             <br>
                             <a href="{{ url_for('user_wallet') }}" class="btn btn-sm btn-outline-danger mt-2">
-                                <i class="fas fa-plus"></i> Top up Wallet
+                                <i class="fas fa-plus me-1"></i>Top up Wallet
                             </a>
                         </div>
 
-                        <button type="submit" class="btn btn-success w-100" id="submit-btn">
-                            <i class="fas fa-lock"></i> Confirm Pre-booking
+                        <button type="submit" class="btn btn-success w-100 btn-lg" id="submit-btn">
+                            <i class="fas fa-lock me-2"></i>Confirm Pre-booking
                         </button>
                     </form>
                 {% else %}
                     <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
+                        <i class="fas fa-exclamation-triangle me-1"></i>
                         No pre-book slots configured at this parking lot.
                     </div>
                     <a href="{{ url_for('parking_lots') }}" class="btn btn-primary w-100">
-                        <i class="fas fa-search"></i> Find Other Parking Lots
+                        <i class="fas fa-search me-1"></i>Find Other Parking Lots
                     </a>
                 {% endif %}
             </div>
@@ -128,9 +128,9 @@
     </div>
 </div>
 
-<div class="mt-3">
+<div class="mt-3 fade-in">
     <a href="{{ url_for('parking_lots') }}" class="btn btn-outline-secondary">
-        <i class="fas fa-arrow-left"></i> Back to Parking Lots
+        <i class="fas fa-arrow-left me-1"></i>Back to Parking Lots
     </a>
 </div>
 {% endblock %}
@@ -140,7 +140,6 @@
     var walletBalance = {{ wallet_balance }};
     var lotId = '{{ lot._id }}';
 
-    // Set minimum datetime to now
     var now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     var minDatetime = now.toISOString().slice(0, 16);
@@ -185,7 +184,6 @@
                     document.getElementById('fee-rate').textContent = data.price_per_hour;
                     feeBox.classList.remove('d-none');
 
-                    // Check wallet balance
                     if (walletBalance < data.estimated_fee) {
                         var shortfall = (data.estimated_fee - walletBalance).toFixed(2);
                         document.getElementById('balance-shortfall').textContent =
