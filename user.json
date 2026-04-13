@@ -1,0 +1,90 @@
+{
+    "super_admin": [
+        {
+            "name": "Super Admin",
+            "email": "superadmin@parking.com",
+            "password": "superadmin123",
+            "role": "super_admin"
+        }
+    ],
+    "admins": [
+        {
+            "name": "Ravi Sharma",
+            "email": "ravi.admin@parking.com",
+            "password": "Admin@1234",
+            "role": "admin"
+        },
+        {
+            "name": "Priya Mehta",
+            "email": "priya.admin@parking.com",
+            "password": "Admin@1234",
+            "role": "admin"
+        }
+    ],
+    "watchmen": [
+        {
+            "name": "Watchman - Green Park Parking",
+            "lot": "Green Park Parking",
+            "email": "watchman_green_park_parking_<rand>@parking.local",
+            "password": "Watch@1234",
+            "role": "watchman",
+            "note": "Email prefix is auto-generated with a random 4-char suffix. Check DB or seed output for exact email."
+        },
+        {
+            "name": "Watchman - Blue Bay Lot",
+            "lot": "Blue Bay Lot",
+            "email": "watchman_blue_bay_lot_<rand>@parking.local",
+            "password": "Watch@1234",
+            "role": "watchman",
+            "note": "Email prefix is auto-generated with a random 4-char suffix. Check DB or seed output for exact email."
+        },
+        {
+            "name": "Watchman - Skyline Parking",
+            "lot": "Skyline Parking",
+            "email": "watchman_skyline_parking_<rand>@parking.local",
+            "password": "Watch@1234",
+            "role": "watchman",
+            "note": "Email prefix is auto-generated with a random 4-char suffix. Check DB or seed output for exact email."
+        },
+        {
+            "name": "Watchman - Metro Lot Central",
+            "lot": "Metro Lot Central",
+            "email": "watchman_metro_lot_central_<rand>@parking.local",
+            "password": "Watch@1234",
+            "role": "watchman",
+            "note": "Email prefix is auto-generated with a random 4-char suffix. Check DB or seed output for exact email."
+        }
+    ],
+    "users": [
+        {
+            "name": "Arjun Kapoor",
+            "email": "arjun@example.com",
+            "password": "User@1234",
+            "role": "user"
+        },
+        {
+            "name": "Sneha Patil",
+            "email": "sneha@example.com",
+            "password": "User@1234",
+            "role": "user"
+        },
+        {
+            "name": "Rahul Desai",
+            "email": "rahul@example.com",
+            "password": "User@1234",
+            "role": "user"
+        },
+        {
+            "name": "Pooja Joshi",
+            "email": "pooja@example.com",
+            "password": "User@1234",
+            "role": "user"
+        },
+        {
+            "name": "Amit Kulkarni",
+            "email": "amit@example.com",
+            "password": "User@1234",
+            "role": "user"
+        }
+    ]
+}
