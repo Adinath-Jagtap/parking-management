@@ -6,7 +6,7 @@
 <style>
     /* Hero */
     .pk-hero {
-        min-height: 80vh;
+        min-height: 88vh;
         display: flex;
         align-items: center;
         position: relative;
@@ -16,39 +16,35 @@
     .pk-hero h1 { font-size: 3.2rem; font-weight: 900; line-height: 1.1; color: var(--pk-text); }
     .pk-hero h1 span { color: var(--pk-primary); }
     .pk-hero .lead { font-size: 1.15rem; color: var(--pk-text-muted); max-width: 460px; margin-top: 16px; }
-    .pk-hero-3d { position: relative; min-height: 400px; }
-    #hero-canvas { width: 100%; height: 100%; display: block; }
-    .pk-hero-fallback {
-        display: none;
-        width: 100%; height: 300px;
-        position: relative; overflow: hidden;
-        border-radius: var(--pk-radius-lg);
-        background: var(--pk-primary-light);
+
+    /* Spline 3D viewer */
+    .pk-hero-spline {
+        position: relative;
+        width: 100%;
+        height: 580px;
+        border-radius: var(--pk-radius-xl);
+        overflow: hidden;
     }
-    .pk-hero-fallback .road {
-        position: absolute; bottom: 0; width: 100%; height: 40px;
-        background: #374151; border-radius: 4px 4px 0 0;
+    .pk-hero-spline spline-viewer {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border: none;
+        background: transparent;
     }
-    .pk-hero-fallback .road::before {
-        content: ''; position: absolute; top: 50%; left: 0; width: 200%;
-        height: 3px; background: repeating-linear-gradient(90deg, #F59F00 0, #F59F00 20px, transparent 20px, transparent 40px);
-        animation: roadScroll 1.5s linear infinite;
+    /* Cover the "Built with Spline" badge rendered in the shadow DOM */
+    .pk-hero-spline::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 180px;
+        height: 52px;
+        background: #FFF8F1;
+        z-index: 10;
+        pointer-events: none;
+        border-top-left-radius: 8px;
     }
-    @keyframes roadScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-    .pk-hero-fallback .css-car-hero {
-        position: absolute; bottom: 38px; animation: driveCar 6s linear infinite;
-    }
-    .pk-hero-fallback .css-car-hero .car-body { width: 80px; height: 28px; background: var(--pk-primary); border-radius: 8px 14px 3px 3px; position: relative; }
-    .pk-hero-fallback .css-car-hero .car-roof { width: 44px; height: 18px; background: var(--pk-primary-hover); border-radius: 8px 8px 0 0; position: absolute; top: -18px; left: 14px; }
-    .pk-hero-fallback .css-car-hero .car-window { width: 18px; height: 12px; background: var(--pk-primary-light); border-radius: 3px; position: absolute; top: -14px; }
-    .pk-hero-fallback .css-car-hero .car-window-f { left: 38px; }
-    .pk-hero-fallback .css-car-hero .car-window-r { left: 18px; }
-    .pk-hero-fallback .css-car-hero .car-wheel {
-        width: 14px; height: 14px; background: #1A1A1A; border: 2px solid #6B7280;
-        border-radius: 50%; position: absolute; bottom: -7px; animation: spinWheel 0.3s linear infinite;
-    }
-    .pk-hero-fallback .css-car-hero .wh-f { left: 10px; }
-    .pk-hero-fallback .css-car-hero .wh-r { right: 10px; }
 
     /* Sections */
     .pk-section { padding: 80px 0; }
@@ -108,8 +104,7 @@
         .pk-hero { min-height: auto; padding: 32px 0; text-align: center; }
         .pk-hero h1 { font-size: 2rem; }
         .pk-hero .lead { margin: 12px auto 0; }
-        .pk-hero-3d { display: none; }
-        .pk-hero-fallback { display: block !important; margin-top: 24px; }
+        .pk-hero-spline { height: 320px; margin-top: 24px; }
         .pk-section { padding: 48px 0; }
         .pk-section-title { font-size: 1.6rem; }
         .pk-cta { padding: 40px 24px; }
@@ -121,8 +116,8 @@
 {% block content %}
 <!-- ═══ HERO ═══ -->
 <div class="pk-hero fade-in">
-    <div class="row align-items-center w-100">
-        <div class="col-lg-6">
+    <div class="row align-items-center w-100 g-0">
+        <div class="col-lg-5">
             <h1>Smart Parking,<br><span>Simplified</span></h1>
             <p class="lead">Find, book and manage parking spots effortlessly. No hassle, no waiting, no stress.</p>
             {% if not current_user.is_authenticated %}
@@ -136,23 +131,13 @@
             </div>
             {% endif %}
         </div>
-        <div class="col-lg-6 d-none d-lg-block">
-            <div class="pk-hero-3d">
-                <canvas id="hero-canvas"></canvas>
+        <!-- Spline 3D -->
+        <div class="col-lg-7 mt-4 mt-lg-0">
+            <div class="pk-hero-spline">
+                <spline-viewer url="https://prod.spline.design/xqL1bLfht5UKVRXq/scene.splinecode"
+                               loading-anim-type="none"
+                               events-target="global"></spline-viewer>
             </div>
-        </div>
-    </div>
-    <!-- Mobile fallback -->
-    <div class="pk-hero-fallback d-lg-none">
-        <div class="road"></div>
-        <div class="css-car-hero">
-            <div class="car-body">
-                <div class="car-roof"></div>
-                <div class="car-window car-window-f"></div>
-                <div class="car-window car-window-r"></div>
-            </div>
-            <div class="car-wheel wh-f"></div>
-            <div class="car-wheel wh-r"></div>
         </div>
     </div>
 </div>
@@ -204,14 +189,14 @@
             <div class="col-md-4">
                 <div class="pk-step">
                     <div class="pk-step-num">2</div>
-                    <h5>Find & Book</h5>
+                    <h5>Find &amp; Book</h5>
                     <p>Search nearby lots, compare availability, and pre-book a slot instantly</p>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="pk-step">
                     <div class="pk-step-num">3</div>
-                    <h5>Park & Go</h5>
+                    <h5>Park &amp; Go</h5>
                     <p>Scan your QR code at entry, park your vehicle, and pay automatically</p>
                 </div>
             </div>
@@ -234,131 +219,48 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Three.js CDN — only loaded on landing -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- Spline viewer runtime -->
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.96/build/spline-viewer.js"></script>
+
+<!-- Hide Spline "Built with Spline" badge via shadow DOM injection -->
 <script>
-(function() {
-    var canvas = document.getElementById('hero-canvas');
-    if (!canvas) return;
-    try {
-        var scene = new THREE.Scene();
-        var w = canvas.parentElement.clientWidth;
-        var h = Math.max(canvas.parentElement.clientHeight, 400);
-        var camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
-        camera.position.set(0, 3, 8);
-        camera.lookAt(0, 0.5, 0);
-
-        var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-        renderer.setSize(w, h);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-        // Lights
-        var ambient = new THREE.AmbientLight(0xFFF8F1, 0.7);
-        scene.add(ambient);
-        var dirLight = new THREE.DirectionalLight(0xF59F00, 1.2);
-        dirLight.position.set(5, 8, 3);
-        scene.add(dirLight);
-
-        // Road
-        var roadGeo = new THREE.PlaneGeometry(30, 3);
-        var roadMat = new THREE.MeshStandardMaterial({ color: 0x374151 });
-        var road = new THREE.Mesh(roadGeo, roadMat);
-        road.rotation.x = -Math.PI / 2;
-        road.position.y = 0;
-        scene.add(road);
-
-        // Road lines
-        for (var i = -15; i < 15; i += 2) {
-            var lineGeo = new THREE.PlaneGeometry(0.8, 0.08);
-            var lineMat = new THREE.MeshBasicMaterial({ color: 0xF59F00 });
-            var line = new THREE.Mesh(lineGeo, lineMat);
-            line.rotation.x = -Math.PI / 2;
-            line.position.set(i, 0.01, 0);
-            scene.add(line);
-        }
-
-        // Car group
-        var car = new THREE.Group();
-
-        // Body
-        var bodyGeo = new THREE.BoxGeometry(2.2, 0.6, 1.2);
-        var bodyMat = new THREE.MeshStandardMaterial({ color: 0xE8590C, metalness: 0.3, roughness: 0.5 });
-        var bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-        bodyMesh.position.y = 0.6;
-        car.add(bodyMesh);
-
-        // Roof
-        var roofGeo = new THREE.BoxGeometry(1.2, 0.45, 1.05);
-        var roofMat = new THREE.MeshStandardMaterial({ color: 0xD14A06, metalness: 0.2, roughness: 0.6 });
-        var roofMesh = new THREE.Mesh(roofGeo, roofMat);
-        roofMesh.position.set(-0.1, 1.12, 0);
-        car.add(roofMesh);
-
-        // Windows
-        var winMat = new THREE.MeshStandardMaterial({ color: 0xFFF1EB, metalness: 0.5, roughness: 0.1 });
-        var winGeo = new THREE.PlaneGeometry(0.35, 0.3);
-        [[-0.45, 1.1, 0.53], [0.25, 1.1, 0.53], [-0.45, 1.1, -0.53], [0.25, 1.1, -0.53]].forEach(function(pos) {
-            var win = new THREE.Mesh(winGeo, winMat);
-            win.position.set(pos[0], pos[1], pos[2]);
-            if (Math.abs(pos[2]) > 0.5) win.rotation.y = pos[2] > 0 ? 0 : Math.PI;
-            car.add(win);
-        });
-
-        // Wheels
-        var wheelGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.15, 16);
-        var wheelMat = new THREE.MeshStandardMaterial({ color: 0x1A1A1A });
-        var wheels = [];
-        [[-0.65, 0.22, 0.65], [0.65, 0.22, 0.65], [-0.65, 0.22, -0.65], [0.65, 0.22, -0.65]].forEach(function(pos) {
-            var wheel = new THREE.Mesh(wheelGeo, wheelMat);
-            wheel.rotation.x = Math.PI / 2;
-            wheel.position.set(pos[0], pos[1], pos[2]);
-            car.add(wheel);
-            wheels.push(wheel);
-        });
-
-        // Headlights
-        var hlMat = new THREE.MeshBasicMaterial({ color: 0xF59F00 });
-        var hlGeo = new THREE.SphereGeometry(0.08, 8, 8);
-        [[1.12, 0.65, 0.4], [1.12, 0.65, -0.4]].forEach(function(pos) {
-            var hl = new THREE.Mesh(hlGeo, hlMat);
-            hl.position.set(pos[0], pos[1], pos[2]);
-            car.add(hl);
-        });
-
-        car.position.set(-6, 0, 0);
-        scene.add(car);
-
-        // Animate
-        var clock = new THREE.Clock();
-        function animate() {
-            requestAnimationFrame(animate);
-            var t = clock.getElapsedTime();
-
-            // Drive car
-            car.position.x = ((t * 1.5) % 14) - 7;
-
-            // Spin wheels
-            wheels.forEach(function(w) { w.rotation.z += 0.08; });
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Resize
-        window.addEventListener('resize', function() {
-            var nw = canvas.parentElement.clientWidth;
-            var nh = Math.max(canvas.parentElement.clientHeight, 400);
-            camera.aspect = nw / nh;
-            camera.updateProjectionMatrix();
-            renderer.setSize(nw, nh);
-        });
-
-    } catch (e) {
-        // WebGL failed — show CSS fallback
-        canvas.style.display = 'none';
-        var fallback = document.querySelector('.pk-hero-fallback');
-        if (fallback) fallback.style.display = 'block';
+(function hideSplLogo() {
+    function injectHide(viewer) {
+        // Wait until shadow root is available
+        var attempts = 0;
+        var iv = setInterval(function () {
+            attempts++;
+            if (viewer.shadowRoot) {
+                var style = document.createElement('style');
+                style.textContent = [
+                    'a[href*="spline.design"],',
+                    '#logo, .logo, [class*="logo"],',
+                    '[class*="watermark"], [class*="badge"],',
+                    '[class*="brand"], [class*="built"] {',
+                    '  display: none !important;',
+                    '  opacity: 0 !important;',
+                    '  visibility: hidden !important;',
+                    '}'
+                ].join('\n');
+                viewer.shadowRoot.appendChild(style);
+                clearInterval(iv);
+            }
+            if (attempts > 60) clearInterval(iv);
+        }, 200);
     }
+
+    // Handle viewers already in DOM
+    document.querySelectorAll('spline-viewer').forEach(injectHide);
+
+    // Handle dynamically added viewers
+    var mo = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(node) {
+                if (node.tagName === 'SPLINE-VIEWER') injectHide(node);
+            });
+        });
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
 })();
 </script>
 {% endblock %}

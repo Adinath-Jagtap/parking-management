@@ -55,7 +55,19 @@ def set_security_headers(response):
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Content-Security-Policy'] = "default-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://checkout.razorpay.com 'unsafe-inline'; media-src 'self' blob:; img-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com; connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com;"
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com "
+        "https://checkout.razorpay.com https://prod.spline.design https://*.spline.design "
+        "https://www.gstatic.com 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com "
+        "https://checkout.razorpay.com https://www.gstatic.com 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; "
+        "media-src 'self' blob:; "
+        "img-src 'self' data: blob: https://*.spline.design https://www.gstatic.com; "
+        "worker-src 'self' blob: https://www.gstatic.com; "
+        "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com; "
+        "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com "
+        "https://prod.spline.design https://*.spline.design https://www.gstatic.com;"
+    )
     return response
 
 # Initialize extensions
