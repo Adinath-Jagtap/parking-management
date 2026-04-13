@@ -82,10 +82,13 @@
                         <small class="fw-bold" style="color:var(--pk-primary);">{{ "%.1f"|format(occupancy_rate) }}%</small>
                     </div>
                     <div class="progress" style="height:12px;">
-                        <div class="progress-bar" role="progressbar" style="width: {{ occupancy_rate }}%">
+                        <div class="progress-bar" id="occupancyBar" role="progressbar" data-width="{{ occupancy_rate }}">
                             {{ "%.0f"|format(occupancy_rate) }}%
                         </div>
                     </div>
+                    <script>
+                        (function(){var b=document.getElementById('occupancyBar');if(b)b.style.width=b.getAttribute('data-width')+'%';})();
+                    </script>
                 </div>
             </div>
         </div>

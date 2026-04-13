@@ -13,26 +13,67 @@
         will-change: transform;
         overflow: hidden;
         height: 100%;
-        display: flex; flex-direction: column;
+        display: flex;
+        flex-direction: column;
     }
-    .pk-lot-card:hover { transform: translateY(-6px); box-shadow: var(--pk-shadow-hover); }
+
+    .pk-lot-card:hover {
+        transform: translateY(-6px);
+        box-shadow: var(--pk-shadow-hover);
+    }
+
     .pk-lot-card .lot-header {
         background: linear-gradient(135deg, var(--pk-primary) 0%, var(--pk-primary-hover) 100%);
-        padding: 20px 24px; color: #fff;
+        padding: 20px 24px;
+        color: #fff;
     }
-    .pk-lot-card .lot-header h5 { font-weight: 800; margin: 0; font-size: 1.1rem; }
-    .pk-lot-card .lot-header small { opacity: 0.8; font-size: 0.82rem; }
-    .pk-lot-card .lot-body { padding: 20px 24px; flex: 1; }
-    .pk-lot-card .lot-footer { padding: 16px 24px; border-top: 1px solid var(--pk-border); }
+
+    .pk-lot-card .lot-header h5 {
+        font-weight: 800;
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .pk-lot-card .lot-header small {
+        opacity: 0.8;
+        font-size: 0.82rem;
+    }
+
+    .pk-lot-card .lot-body {
+        padding: 20px 24px;
+        flex: 1;
+    }
+
+    .pk-lot-card .lot-footer {
+        padding: 16px 24px;
+        border-top: 1px solid var(--pk-border);
+    }
+
     .pk-lot-stat {
-        text-align: center; padding: 12px 8px;
+        text-align: center;
+        padding: 12px 8px;
         border-radius: var(--pk-radius-sm);
         background: var(--pk-surface);
     }
-    .pk-lot-stat .val { font-size: 1.5rem; font-weight: 900; line-height: 1; }
-    .pk-lot-stat .lbl { font-size: 0.7rem; font-weight: 700; color: var(--pk-text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+
+    .pk-lot-stat .val {
+        font-size: 1.5rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .pk-lot-stat .lbl {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--pk-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
     .pk-search-bar {
-        position: sticky; top: 88px; z-index: 10;
+        position: sticky;
+        top: 88px;
+        z-index: 10;
         background: var(--pk-white);
         border-radius: var(--pk-radius-lg);
         box-shadow: var(--pk-shadow-md);
@@ -40,9 +81,15 @@
         margin-bottom: 24px;
         border: 1px solid var(--pk-border);
     }
+
     @media (max-width: 767px) {
-        .pk-search-bar { top: 76px; }
-        .pk-lot-card:hover { transform: none; }
+        .pk-search-bar {
+            top: 76px;
+        }
+
+        .pk-lot-card:hover {
+            transform: none;
+        }
     }
 </style>
 {% endblock %}
@@ -54,10 +101,12 @@
 <div class="pk-search-bar fade-in">
     <form method="GET" action="{{ url_for('parking_lots') }}" class="row g-2 align-items-center">
         <div class="col">
-            <input type="text" name="search" class="form-control" placeholder="Search by name, address or pincode..." value="{{ search }}" style="min-height:48px;">
+            <input type="text" name="search" class="form-control" placeholder="Search by name, address or pincode..."
+                value="{{ search }}" style="min-height:48px;">
         </div>
         <div class="col-auto">
-            <button type="submit" class="btn btn-primary"><i class="fas fa-search me-1"></i><span class="d-none d-md-inline">Search</span></button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search me-1"></i><span
+                    class="d-none d-md-inline">Search</span></button>
         </div>
         {% if search %}
         <div class="col-auto">
@@ -99,10 +148,12 @@
                 </div>
                 <div class="row g-2">
                     <div class="col-6">
-                        <span class="badge bg-secondary w-100 py-2"><i class="fas fa-walking me-1"></i>Walk-in: {{ lot.walkin_slots|default(0) }}</span>
+                        <span class="badge bg-secondary w-100 py-2"><i class="fas fa-walking me-1"></i>Walk-in: {{
+                            lot.walkin_slots|default(0) }}</span>
                     </div>
                     <div class="col-6">
-                        <span class="badge bg-warning w-100 py-2"><i class="fas fa-calendar-check me-1"></i>Pre-book: {{ lot.prebook_slots|default(0) }}</span>
+                        <span class="badge bg-warning w-100 py-2"><i class="fas fa-calendar-check me-1"></i>Pre-book: {{
+                            lot.prebook_slots|default(0) }}</span>
                     </div>
                 </div>
             </div>
@@ -124,14 +175,16 @@
 <nav class="mt-4">
     <ul class="pagination justify-content-center">
         {% if page > 1 %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('parking_lots', page=page-1, search=search) }}">&laquo;</a></li>
+        <li class="page-item"><a class="page-link"
+                href="{{ url_for('parking_lots', page=page-1, search=search) }}">&laquo;</a></li>
         {% endif %}
         {% for p in range(1, total_pages + 1) %}
-        <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link" href="{{ url_for('parking_lots', page=p, search=search) }}">{{ p }}</a></li>
+        <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link"
+                href="{{ url_for('parking_lots', page=p, search=search) }}">{{ p }}</a></li>
         {% endfor %}
-        {% if page < total_pages %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('parking_lots', page=page+1, search=search) }}">&raquo;</a></li>
-        {% endif %}
+        {% if page < total_pages %} <li class="page-item"><a class="page-link"
+                href="{{ url_for('parking_lots', page=page+1, search=search) }}">&raquo;</a></li>
+            {% endif %}
     </ul>
 </nav>
 {% endif %}
