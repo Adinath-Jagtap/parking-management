@@ -287,16 +287,44 @@
         animation: spinWheel 0.35s linear infinite;
     }
 
-    .pk-scene-car .wh-f { left: 5px; }
-    .pk-scene-car .wh-r { right: 5px; }
+    .pk-scene-car .wh-f {
+        left: 5px;
+    }
+
+    .pk-scene-car .wh-r {
+        right: 5px;
+    }
 
     @keyframes drivePark {
-        0%   { left: -60px; opacity: 0; }
-        15%  { left: 40%; opacity: 1; }
-        50%  { left: 40%; opacity: 1; }
-        65%  { left: 40%; opacity: 1; }
-        80%  { left: calc(100% + 60px); opacity: 0; }
-        100% { left: calc(100% + 60px); opacity: 0; }
+        0% {
+            left: -60px;
+            opacity: 0;
+        }
+
+        15% {
+            left: 40%;
+            opacity: 1;
+        }
+
+        50% {
+            left: 40%;
+            opacity: 1;
+        }
+
+        65% {
+            left: 40%;
+            opacity: 1;
+        }
+
+        80% {
+            left: calc(100% + 60px);
+            opacity: 0;
+        }
+
+        100% {
+            left: calc(100% + 60px);
+            opacity: 0;
+        }
     }
 
     /* Scroll indicator */
@@ -327,8 +355,15 @@
     }
 
     @keyframes scrollBounce {
-        0%, 100% { transform: translateX(-50%) translateY(0); }
-        50%      { transform: translateX(-50%) translateY(6px); }
+
+        0%,
+        100% {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        50% {
+            transform: translateX(-50%) translateY(6px);
+        }
     }
 
     /* ── Sections ── */
@@ -420,10 +455,21 @@
     }
 
     /* Staggered animations */
-    .pk-stagger-1 { animation: fadeInUp 0.5s ease 0.1s both; }
-    .pk-stagger-2 { animation: fadeInUp 0.5s ease 0.2s both; }
-    .pk-stagger-3 { animation: fadeInUp 0.5s ease 0.3s both; }
-    .pk-stagger-4 { animation: fadeInUp 0.5s ease 0.4s both; }
+    .pk-stagger-1 {
+        animation: fadeInUp 0.5s ease 0.1s both;
+    }
+
+    .pk-stagger-2 {
+        animation: fadeInUp 0.5s ease 0.2s both;
+    }
+
+    .pk-stagger-3 {
+        animation: fadeInUp 0.5s ease 0.3s both;
+    }
+
+    .pk-stagger-4 {
+        animation: fadeInUp 0.5s ease 0.4s both;
+    }
 
     /* ── How it works ── */
     .pk-step {
@@ -498,7 +544,7 @@
         width: 240px;
         height: 240px;
         border-radius: 50%;
-        background: rgba(255,255,255,0.06);
+        background: rgba(255, 255, 255, 0.06);
     }
 
     .pk-cta::after {
@@ -509,7 +555,7 @@
         width: 180px;
         height: 180px;
         border-radius: 50%;
-        background: rgba(255,255,255,0.04);
+        background: rgba(255, 255, 255, 0.04);
     }
 
     .pk-cta h2 {
@@ -768,7 +814,8 @@
             <div class="col-lg-6 col-md-12">
                 <div class="fade-in">
                     <h1>Smart Parking,<br><span>Simplified</span></h1>
-                    <p class="lead">Find, book and manage parking spots effortlessly. No hassle, no waiting, no stress.</p>
+                    <p class="lead">Find, book and manage parking spots effortlessly. No hassle, no waiting, no stress.
+                    </p>
                     {% if not current_user.is_authenticated %}
                     <div class="pk-hero-actions">
                         <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4">
@@ -783,15 +830,15 @@
                         <div class="pk-hero-stat pk-stagger-2">
                             <div class="pk-hero-stat-icon orange"><i class="fas fa-building"></i></div>
                             <div>
-                                <div class="pk-hero-stat-value">50+</div>
+                                <div class="pk-hero-stat-value">10+</div>
                                 <div class="pk-hero-stat-label">Parking Lots</div>
                             </div>
                         </div>
                         <div class="pk-hero-stat pk-stagger-3">
                             <div class="pk-hero-stat-icon amber"><i class="fas fa-car"></i></div>
                             <div>
-                                <div class="pk-hero-stat-value">10K+</div>
-                                <div class="pk-hero-stat-label">Happy Drivers</div>
+                                <div class="pk-hero-stat-value">1k+</div>
+                                <div class="pk-hero-stat-label">Happy Users</div>
                             </div>
                         </div>
                         <div class="pk-hero-stat pk-stagger-4">
@@ -850,126 +897,120 @@
         </div>
     </div>
 
-    <!-- Scroll Indicator -->
-    <div class="pk-scroll-indicator">
-        <span>Scroll</span>
-        <i class="fas fa-chevron-down"></i>
-    </div>
-</div>
 
-<!-- ═══ FEATURES ═══ -->
-<div class="pk-section pk-section-alt">
-    <div class="container">
-        <h2 class="pk-section-title">Why ParkEasy?</h2>
-        <p class="pk-section-subtitle">Everything you need to park smarter, faster, and stress-free.</p>
-        <div class="row g-4">
-            <div class="col-lg-4 col-md-6 pk-stagger-1">
-                <div class="pk-feature-card">
-                    <div class="pk-feature-icon icon-orange"><i class="fas fa-search-location"></i></div>
-                    <h5>Find Parking</h5>
-                    <p>Search and discover available parking spots near your destination in real-time</p>
+    <!-- ═══ FEATURES ═══ -->
+    <div class="pk-section pk-section-alt">
+        <div class="container">
+            <h2 class="pk-section-title">Why ParkEasy?</h2>
+            <p class="pk-section-subtitle">Everything you need to park smarter, faster, and stress-free.</p>
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6 pk-stagger-1">
+                    <div class="pk-feature-card">
+                        <div class="pk-feature-icon icon-orange"><i class="fas fa-search-location"></i></div>
+                        <h5>Find Parking</h5>
+                        <p>Search and discover available parking spots near your destination in real-time</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 pk-stagger-2">
+                    <div class="pk-feature-card">
+                        <div class="pk-feature-icon icon-amber"><i class="fas fa-calendar-check"></i></div>
+                        <h5>Book in Advance</h5>
+                        <p>Pre-book your parking slot and arrive stress-free every single time</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 pk-stagger-3">
+                    <div class="pk-feature-card">
+                        <div class="pk-feature-icon icon-green"><i class="fas fa-wallet"></i></div>
+                        <h5>Easy Payments</h5>
+                        <p>Wallet-based payments with automatic invoices and instant receipts</p>
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6 pk-stagger-2">
-                <div class="pk-feature-card">
-                    <div class="pk-feature-icon icon-amber"><i class="fas fa-calendar-check"></i></div>
-                    <h5>Book in Advance</h5>
-                    <p>Pre-book your parking slot and arrive stress-free every single time</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6 pk-stagger-3">
-                <div class="pk-feature-card">
-                    <div class="pk-feature-icon icon-green"><i class="fas fa-wallet"></i></div>
-                    <h5>Easy Payments</h5>
-                    <p>Wallet-based payments with automatic invoices and instant receipts</p>
-                </div>
-            </div>
-        </div>
 
-        <!-- Trust Row -->
-        <div class="pk-trust-row">
-            <div class="pk-trust-item">
-                <i class="fas fa-shield-alt"></i>
-                <span>Secure</span>
-            </div>
-            <div class="pk-trust-item">
-                <i class="fas fa-bolt"></i>
-                <span>Instant</span>
-            </div>
-            <div class="pk-trust-item">
-                <i class="fas fa-mobile-alt"></i>
-                <span>Mobile Ready</span>
-            </div>
-            <div class="pk-trust-item">
-                <i class="fas fa-headset"></i>
-                <span>24/7 Support</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ═══ HOW IT WORKS ═══ -->
-<div class="pk-section">
-    <div class="container">
-        <h2 class="pk-section-title">How It Works</h2>
-        <p class="pk-section-subtitle">Park in 3 simple steps.</p>
-        <div class="row g-4 justify-content-center">
-            <div class="col-lg-4 col-md-4 col-sm-12 pk-step-connector pk-stagger-1">
-                <div class="pk-step">
-                    <div class="pk-step-num">1</div>
-                    <h5>Register</h5>
-                    <p>Create your account and add your vehicles in under a minute</p>
+            <!-- Trust Row -->
+            <div class="pk-trust-row">
+                <div class="pk-trust-item">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Secure</span>
                 </div>
-            </div>
-            <div class="col-lg-4 col-md-4 col-sm-12 pk-step-connector pk-stagger-2">
-                <div class="pk-step">
-                    <div class="pk-step-num">2</div>
-                    <h5>Find &amp; Book</h5>
-                    <p>Search nearby lots, compare availability, and pre-book a slot instantly</p>
+                <div class="pk-trust-item">
+                    <i class="fas fa-bolt"></i>
+                    <span>Instant</span>
                 </div>
-            </div>
-            <div class="col-lg-4 col-md-4 col-sm-12 pk-step-connector pk-stagger-3">
-                <div class="pk-step">
-                    <div class="pk-step-num">3</div>
-                    <h5>Park &amp; Go</h5>
-                    <p>Scan your QR code at entry, park your vehicle, and pay automatically</p>
+                <div class="pk-trust-item">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>Mobile Ready</span>
+                </div>
+                <div class="pk-trust-item">
+                    <i class="fas fa-headset"></i>
+                    <span>24/7 Support</span>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- ═══ CTA ═══ -->
-{% if not current_user.is_authenticated %}
-<div class="container mb-5">
-    <div class="pk-cta fade-in">
-        <h2>Ready to Park Smarter?</h2>
-        <p>Join thousands of drivers who've made parking effortless with ParkEasy.</p>
-        <a href="{{ url_for('register') }}" class="btn btn-lg px-5">
-            <i class="fas fa-rocket me-2"></i>Get Started Free
-        </a>
+    <!-- ═══ HOW IT WORKS ═══ -->
+    <div class="pk-section">
+        <div class="container">
+            <h2 class="pk-section-title">How It Works</h2>
+            <p class="pk-section-subtitle">Park in 3 simple steps.</p>
+            <div class="row g-4 justify-content-center">
+                <div class="col-lg-4 col-md-4 col-sm-12 pk-step-connector pk-stagger-1">
+                    <div class="pk-step">
+                        <div class="pk-step-num">1</div>
+                        <h5>Register</h5>
+                        <p>Create your account and add your vehicles in under a minute</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-4 col-sm-12 pk-step-connector pk-stagger-2">
+                    <div class="pk-step">
+                        <div class="pk-step-num">2</div>
+                        <h5>Find &amp; Book</h5>
+                        <p>Search nearby lots, compare availability, and pre-book a slot instantly</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-4 col-sm-12 pk-step-connector pk-stagger-3">
+                    <div class="pk-step">
+                        <div class="pk-step-num">3</div>
+                        <h5>Park &amp; Go</h5>
+                        <p>Scan your QR code at entry, park your vehicle, and pay automatically</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
-{% endif %}
-{% endblock %}
 
-{% block scripts %}
-<!-- Intersection Observer for scroll-triggered animations -->
-<script>
-    (function () {
-        // Animate elements when they scroll into view
-        var observer = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('fade-in');
-                    observer.unobserve(entry.target);
-                }
+    <!-- ═══ CTA ═══ -->
+    {% if not current_user.is_authenticated %}
+    <div class="container mb-5">
+        <div class="pk-cta fade-in">
+            <h2>Ready to Park Smarter?</h2>
+            <p>Join thousands of drivers who've made parking effortless with ParkEasy.</p>
+            <a href="{{ url_for('register') }}" class="btn btn-lg px-5">
+                <i class="fas fa-rocket me-2"></i>Get Started Free
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    {% endblock %}
+
+    {% block scripts %}
+    <!-- Intersection Observer for scroll-triggered animations -->
+    <script>
+        (function () {
+            // Animate elements when they scroll into view
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('fade-in');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+            document.querySelectorAll('.pk-feature-card, .pk-step, .pk-cta, .pk-trust-item').forEach(function (el) {
+                observer.observe(el);
             });
-        }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
-
-        document.querySelectorAll('.pk-feature-card, .pk-step, .pk-cta, .pk-trust-item').forEach(function (el) {
-            observer.observe(el);
-        });
-    })();
-</script>
-{% endblock %}
+        })();
+    </script>
+    {% endblock %}
