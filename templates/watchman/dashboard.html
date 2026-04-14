@@ -137,6 +137,24 @@
     .pay-result { border-radius: 10px; padding: 14px 16px; margin-top: 14px; display: none; }
     .pay-result.show { display: block; }
     .inline-pay-section { margin-top: 16px; padding-top: 14px; border-top: 2px dashed rgba(0,0,0,0.15); }
+
+    /* Walk-in slot selection grid */
+    .wm-slot-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 12px; }
+    .wm-slot-card {
+        width: 80px; min-height: 64px; border: 2px solid var(--pk-border);
+        border-radius: var(--pk-radius); background: var(--pk-white);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        cursor: pointer; transition: border-color 0.18s, background 0.18s;
+        font-weight: 700; font-size: 1.1rem; color: var(--pk-text); gap: 2px;
+    }
+    .wm-slot-card:hover { border-color: var(--pk-success); }
+    .wm-slot-card.wm-slot-selected {
+        border: 2px solid var(--pk-success);
+        background: var(--pk-success-light);
+        color: #064e3b;
+    }
+    .wm-slot-label { font-size: 0.65rem; font-weight: 700; color: var(--pk-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .wm-slot-card.wm-slot-selected .wm-slot-label { color: #065f46; }
 </style>
 
 <!-- Processing overlay -->
@@ -318,6 +336,10 @@
     // ============ Inline Payment State ============
     let currentInvoiceId = null;
 
+    // ============ Walk-in Slot Selection State ============
+    let walkinVehicleId = null;
+    let selectedWalkinSlotId = null;
+
     // ============ TAB SWITCHING ============
     function switchTab(tab) {
         if (tab !== 'camera' && scannerRunning) stopCameraScanner();
@@ -487,6 +509,30 @@
                 ? `<i class="fas fa-parking"></i> Assigned to slot <strong>${escapeHtml(result.slot_number)}</strong>` : '';
             setTimeout(() => hideResult(), 8000);
 
+        } else if (result.success && result.action === 'walkin_select_slot') {
+            card.classList.add('result-card-checkin');
+            icon.innerHTML = '<i class="fas fa-parking" style="color:var(--pk-primary);"></i>';
+            action.textContent = '🔏 SELECT SLOT — WALK-IN';
+            message.textContent = `Vehicle ${escapeHtml(result.vehicle_number)} (${escapeHtml(result.vehicle_type)}) — Please select a parking slot:`;
+
+            walkinVehicleId = result.vehicle_id;
+            selectedWalkinSlotId = null;
+
+            const slots = result.slots || [];
+            let gridHtml = '<div class="wm-slot-grid" id="walkinSlotGrid">';
+            slots.forEach(s => {
+                gridHtml += `<div class="wm-slot-card" onclick="selectWalkinSlot('${escapeHtml(s.slot_id)}', this)" data-slot-id="${escapeHtml(s.slot_id)}">`
+                    + `<span>${escapeHtml(s.slot_number)}</span>`
+                    + `<span class="wm-slot-label">Slot</span>`
+                    + `</div>`;
+            });
+            gridHtml += '</div>';
+            gridHtml += '<div class="mt-3" id="walkinConfirmWrap" style="display:none;">';
+            gridHtml += '<button class="btn btn-success w-100 pay-btn" id="walkinConfirmBtn" onclick="confirmWalkinCheckin()"><i class="fas fa-check me-2"></i>Confirm Check-in</button>';
+            gridHtml += '<div id="walkinConfirmResult" class="pay-result"></div>';
+            gridHtml += '</div>';
+            details.innerHTML = gridHtml;
+
         } else if (result.success && result.action === 'checkout') {
             card.classList.add('result-card-checkout');
             icon.innerHTML = '<i class="fas fa-sign-out-alt" style="color:var(--pk-primary);"></i>';
@@ -613,6 +659,64 @@
         document.getElementById('resultCard').className = 'result-card';
         document.getElementById('inlinePaySection').style.display = 'none';
         currentInvoiceId = null;
+        walkinVehicleId = null;
+        selectedWalkinSlotId = null;
+    }
+
+    // ============ WALK-IN SLOT SELECTION ============
+    function selectWalkinSlot(slotId, el) {
+        selectedWalkinSlotId = slotId;
+        document.querySelectorAll('.wm-slot-card').forEach(c => c.classList.remove('wm-slot-selected'));
+        if (el) el.classList.add('wm-slot-selected');
+        const wrap = document.getElementById('walkinConfirmWrap');
+        if (wrap) wrap.style.display = 'block';
+    }
+
+    async function confirmWalkinCheckin() {
+        if (!walkinVehicleId || !selectedWalkinSlotId) return;
+
+        const btn = document.getElementById('walkinConfirmBtn');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...'; }
+
+        const resultDiv = document.getElementById('walkinConfirmResult');
+        if (resultDiv) {
+            resultDiv.className = 'pay-result show';
+            resultDiv.style.background = '#FFF8F1';
+            resultDiv.style.border = '1px solid #F0E6DB';
+            resultDiv.style.color = '#6B7280';
+            resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Assigning slot...';
+        }
+
+        try {
+            const resp = await fetch('/watchman/checkin-assign-slot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                body: JSON.stringify({ vehicle_id: walkinVehicleId, slot_id: selectedWalkinSlotId })
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+                refreshStats();
+                loadRecentScans();
+                showResult(data);
+            } else {
+                if (resultDiv) {
+                    resultDiv.style.background = 'var(--pk-danger-light)';
+                    resultDiv.style.border = '1px solid var(--pk-danger)';
+                    resultDiv.style.color = '#991b1b';
+                    resultDiv.innerHTML = `<i class="fas fa-times-circle me-2" style="color:var(--pk-danger);"></i><strong>${escapeHtml(data.message || 'Check-in failed.')}</strong>`;
+                }
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check me-2"></i>Confirm Check-in'; }
+            }
+        } catch (err) {
+            if (resultDiv) {
+                resultDiv.style.background = 'var(--pk-danger-light)';
+                resultDiv.style.border = '1px solid var(--pk-danger)';
+                resultDiv.style.color = '#991b1b';
+                resultDiv.innerHTML = '<i class="fas fa-times-circle me-2" style="color:var(--pk-danger);"></i><strong>Network error. Please try again.</strong>';
+            }
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check me-2"></i>Confirm Check-in'; }
+        }
     }
 
     let processingTimeout = null;

@@ -72,6 +72,8 @@
                     <form method="POST" action="{{ url_for('prebook_slot', lot_id=lot._id) }}" id="prebook-form">
                         {{ form.hidden_tag() }}
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <!-- Hidden: selected slot from picker -->
+                        <input type="hidden" name="selected_slot_id" id="selected_slot_id" value="">
 
                         <div class="mb-3">
                             {{ form.vehicle_id.label(class="form-label") }}
@@ -94,9 +96,9 @@
                         <!-- Fee Estimate -->
                         <div id="fee-estimate" class="alert alert-info d-none">
                             <i class="fas fa-calculator me-1"></i>
-                            Estimated fee: <strong id="fee-amount">₹0.00</strong>
+                            Estimated fee: <strong id="fee-amount">&#8377;0.00</strong>
                             <br>
-                            <small><span id="fee-hours">0</span> hours &times; ₹<span id="fee-rate">0</span>/hr</small>
+                            <small><span id="fee-hours">0</span> hours &times; &#8377;<span id="fee-rate">0</span>/hr</small>
                         </div>
 
                         <!-- Insufficient Balance Warning -->
@@ -110,7 +112,39 @@
                             </a>
                         </div>
 
-                        <button type="submit" class="btn btn-success w-100 btn-lg" id="submit-btn">
+                        <!-- ── STEP 2: Slot Picker ── -->
+                        <div id="slot-picker-section" class="mb-3 d-none">
+                            <button type="button" class="btn btn-outline-primary w-100" id="check-slots-btn"
+                                    onclick="checkAvailableSlots()">
+                                <i class="fas fa-search me-2"></i>Check Available Slots
+                            </button>
+
+                            <!-- Loading spinner -->
+                            <div id="slots-loading" class="text-center py-3 d-none">
+                                <div class="spinner-border spinner-border-sm" style="color:var(--pk-primary);" role="status"></div>
+                                <span class="ms-2" style="color:var(--pk-text-muted);font-size:0.9rem;">Checking slot availability...</span>
+                            </div>
+
+                            <!-- Slot Grid Card -->
+                            <div id="slot-grid-card" class="card mt-3 d-none" style="border-top:3px solid var(--pk-primary);">
+                                <div class="card-header" style="background:var(--pk-primary-light);border-color:var(--pk-border);">
+                                    <h6 class="mb-0 fw-bold"><i class="fas fa-parking me-2 text-pk-primary"></i>Select Your Slot</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="slot-grid" class="row g-2"></div>
+                                    <div id="slot-grid-empty" class="alert alert-warning d-none mb-0">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        No prebook slots available for this time window.
+                                    </div>
+                                    <div id="slot-grid-error" class="alert alert-danger d-none mb-0">
+                                        <i class="fas fa-times-circle me-1"></i>
+                                        <span id="slot-grid-error-msg">Failed to load slots.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 btn-lg" id="submit-btn" disabled>
                             <i class="fas fa-lock me-2"></i>Confirm Pre-booking
                         </button>
                     </form>
@@ -136,9 +170,60 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+    .slot-pick-card {
+        border: 2px solid var(--pk-border);
+        border-radius: var(--pk-radius);
+        padding: 12px 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+        background: var(--pk-white);
+        position: relative;
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    }
+    .slot-pick-card:hover:not(.slot-occupied) {
+        border-color: var(--pk-success);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .slot-pick-card.slot-selected {
+        border: 2px solid var(--pk-success);
+        background: var(--pk-success-light);
+    }
+    .slot-pick-card.slot-occupied {
+        opacity: 0.55;
+        cursor: not-allowed;
+        background: var(--pk-surface);
+        border-color: var(--pk-border);
+    }
+    .slot-pick-number {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--pk-text);
+        line-height: 1.1;
+    }
+    .slot-pick-card.slot-selected .slot-pick-number { color: #064e3b; }
+    .slot-pick-checkmark {
+        display: none;
+        position: absolute;
+        top: 5px; right: 7px;
+        color: var(--pk-success);
+        font-size: 0.8rem;
+    }
+    .slot-pick-card.slot-selected .slot-pick-checkmark { display: block; }
+</style>
 <script>
     var walletBalance = {{ wallet_balance }};
     var lotId = '{{ lot._id }}';
+    var currentEstimatedFee = 0;
+    var walletSufficient = false;
+    var selectedSlotId = '';
+    var selectedSlotNumber = '';
 
     var now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -155,17 +240,49 @@
         return text.indexOf('4-Wheeler') !== -1 ? '4-wheeler' : '2-wheeler';
     }
 
+    function updateSubmitButton() {
+        var submitBtn = document.getElementById('submit-btn');
+        if (walletSufficient && selectedSlotId) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Confirm Pre-booking &mdash; Slot ' + selectedSlotNumber;
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-lock me-2"></i>Confirm Pre-booking';
+        }
+    }
+
+    function resetSlotPicker() {
+        selectedSlotId = '';
+        selectedSlotNumber = '';
+        document.getElementById('selected_slot_id').value = '';
+        document.getElementById('slot-grid-card').classList.add('d-none');
+        document.getElementById('slots-loading').classList.add('d-none');
+        updateSubmitButton();
+    }
+
+    function showSlotPickerSection() {
+        var sec = document.getElementById('slot-picker-section');
+        if (startInput.value && endInput.value) {
+            sec.classList.remove('d-none');
+        } else {
+            sec.classList.add('d-none');
+        }
+    }
+
     function estimateFee() {
         var startVal = startInput.value;
         var endVal = endInput.value;
         var feeBox = document.getElementById('fee-estimate');
         var warnBox = document.getElementById('balance-warning');
-        var submitBtn = document.getElementById('submit-btn');
+
+        resetSlotPicker();
+        showSlotPickerSection();
 
         if (!startVal || !endVal) {
             feeBox.classList.add('d-none');
             warnBox.classList.add('d-none');
-            submitBtn.disabled = false;
+            walletSufficient = false;
+            updateSubmitButton();
             return;
         }
 
@@ -179,7 +296,8 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.success) {
-                    document.getElementById('fee-amount').textContent = '₹' + data.estimated_fee.toFixed(2);
+                    currentEstimatedFee = data.estimated_fee;
+                    document.getElementById('fee-amount').textContent = '\u20B9' + data.estimated_fee.toFixed(2);
                     document.getElementById('fee-hours').textContent = data.hours;
                     document.getElementById('fee-rate').textContent = data.price_per_hour;
                     feeBox.classList.remove('d-none');
@@ -187,20 +305,124 @@
                     if (walletBalance < data.estimated_fee) {
                         var shortfall = (data.estimated_fee - walletBalance).toFixed(2);
                         document.getElementById('balance-shortfall').textContent =
-                            'You need ₹' + shortfall + ' more. Current balance: ₹' + walletBalance.toFixed(2);
+                            'You need \u20B9' + shortfall + ' more. Current balance: \u20B9' + walletBalance.toFixed(2);
                         warnBox.classList.remove('d-none');
-                        submitBtn.disabled = true;
+                        walletSufficient = false;
                     } else {
                         warnBox.classList.add('d-none');
-                        submitBtn.disabled = false;
+                        walletSufficient = true;
                     }
                 } else {
                     feeBox.classList.add('d-none');
+                    walletSufficient = false;
                 }
+                updateSubmitButton();
             })
             .catch(function() {
                 feeBox.classList.add('d-none');
+                walletSufficient = false;
+                updateSubmitButton();
             });
+    }
+
+    function checkAvailableSlots() {
+        var startVal = startInput.value;
+        var endVal = endInput.value;
+        var vehicleType = getVehicleType();
+
+        if (!startVal || !endVal) {
+            alert('Please fill both Start and End time first.');
+            return;
+        }
+
+        var gridCard = document.getElementById('slot-grid-card');
+        var loading = document.getElementById('slots-loading');
+        var grid = document.getElementById('slot-grid');
+        var emptyMsg = document.getElementById('slot-grid-empty');
+        var errorMsg = document.getElementById('slot-grid-error');
+
+        loading.classList.remove('d-none');
+        gridCard.classList.add('d-none');
+        selectedSlotId = '';
+        selectedSlotNumber = '';
+        document.getElementById('selected_slot_id').value = '';
+        updateSubmitButton();
+
+        var url = '/user/prebook/available-slots/' + lotId +
+                  '?start_time=' + encodeURIComponent(startVal) +
+                  '&end_time=' + encodeURIComponent(endVal) +
+                  '&vehicle_type=' + encodeURIComponent(vehicleType);
+
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                loading.classList.add('d-none');
+                gridCard.classList.remove('d-none');
+                emptyMsg.classList.add('d-none');
+                errorMsg.classList.add('d-none');
+                grid.innerHTML = '';
+
+                if (!data.success) {
+                    errorMsg.classList.remove('d-none');
+                    document.getElementById('slot-grid-error-msg').textContent = data.message || 'Failed to fetch slots.';
+                    return;
+                }
+
+                var slots = data.slots || [];
+                if (!slots.length) {
+                    emptyMsg.classList.remove('d-none');
+                    return;
+                }
+
+                slots.forEach(function(slot) {
+                    var col = document.createElement('div');
+                    col.className = 'col-4 col-sm-4 col-md-4';
+
+                    var isOccupied = slot.status === 'occupied';
+                    var cardClass = 'slot-pick-card' + (isOccupied ? ' slot-occupied' : '');
+                    var badgeHtml = isOccupied
+                        ? '<span class="badge rounded-pill" style="background:var(--pk-secondary);color:#fff;font-size:0.68rem;">Occupied until ' + escapeHtml(slot.free_at || '?') + '</span>'
+                        : '<span class="badge rounded-pill" style="background:var(--pk-success);color:#fff;font-size:0.68rem;">Available</span>';
+
+                    col.innerHTML = '<div class="' + cardClass + '" ' +
+                        (isOccupied ? '' : 'onclick="selectSlot(\'' + slot.slot_id + '\', \'' + escapeAttr(slot.slot_number) + '\', this)" ') +
+                        'data-slot-id="' + slot.slot_id + '">' +
+                        '<i class="fas fa-check-circle slot-pick-checkmark"></i>' +
+                        '<div class="slot-pick-number">' + escapeHtml(slot.slot_number) + '</div>' +
+                        badgeHtml +
+                        '</div>';
+                    grid.appendChild(col);
+                });
+            })
+            .catch(function() {
+                loading.classList.add('d-none');
+                gridCard.classList.remove('d-none');
+                errorMsg.classList.remove('d-none');
+                document.getElementById('slot-grid-error-msg').textContent = 'Network error. Please try again.';
+            });
+    }
+
+    function selectSlot(slotId, slotNumber, el) {
+        // Deselect all
+        document.querySelectorAll('.slot-pick-card').forEach(function(c) {
+            c.classList.remove('slot-selected');
+        });
+        // Select clicked
+        if (el) el.classList.add('slot-selected');
+        selectedSlotId = slotId;
+        selectedSlotNumber = slotNumber;
+        document.getElementById('selected_slot_id').value = slotId;
+        updateSubmitButton();
+    }
+
+    function escapeAttr(text) {
+        return (text || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function escapeHtml(text) {
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(text || ''));
+        return d.innerHTML;
     }
 
     startInput.addEventListener('change', function() {

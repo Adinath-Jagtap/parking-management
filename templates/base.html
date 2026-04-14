@@ -4,8 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="theme-color" content="#E8590C">
-    <meta name="description" content="ParkEasy — Smart parking management. Find, book and manage parking spots effortlessly.">
-    <title>{% block title %}ParkEasy — Smart Parking{% endblock %}</title>
+
+    <!-- ═══════════════════════════════════════════════════
+         PRIMARY SEO
+    ═══════════════════════════════════════════════════ -->
+    <title>{% block seo_title %}{% block title %}ParkEasy — Smart Parking Management | Terna Engineering College{% endblock %}{% endblock %}</title>
+    <meta name="description" content="{% block seo_description %}ParkEasy is a smart parking management system built by students of Terna Engineering College. Book parking slots, manage walk-ins, pre-book slots, and more.{% endblock %}">
+    <meta name="keywords" content="parking management system, smart parking, pre-book parking slot, parking lot booking, Terna Engineering College project, Adinath Jagtap, Prajwal Zolage, Viraj Kakade, Anurag Amale, parking app India">
+    <meta name="author" content="Adinath Somnath Jagtap, Prajwal Ashok Zolage, Viraj Vikram Kakade, Anurag Amale — Terna Engineering College">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{% block canonical %}https://parking-management-afot.onrender.com{{ request.path }}{% endblock %}">
+
+    <!-- ═══════════════════════════════════════════════════
+         OPEN GRAPH — WhatsApp / Facebook / LinkedIn previews
+    ═══════════════════════════════════════════════════ -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="ParkEasy">
+    <meta property="og:title" content="{% block og_title %}ParkEasy — Smart Parking Management System{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}A smart parking system with pre-booking, walk-in management, and real-time slot tracking. Built by students of Terna Engineering College.{% endblock %}">
+    <meta property="og:url" content="https://parking-management-afot.onrender.com{{ request.path }}">
+    <meta property="og:image" content="https://parking-management-afot.onrender.com/static/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="ParkEasy Parking Management System">
+    <meta property="og:locale" content="en_IN">
+
+    <!-- ═══════════════════════════════════════════════════
+         TWITTER CARD
+    ═══════════════════════════════════════════════════ -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ParkEasy — Smart Parking Management">
+    <meta name="twitter:description" content="Smart parking system built by Terna Engineering College students. Pre-book slots, walk-in check-in, and real-time management.">
+    <meta name="twitter:image" content="https://parking-management-afot.onrender.com/static/og-image.png">
+
+    <!-- ═══════════════════════════════════════════════════
+         FAVICONS
+    ═══════════════════════════════════════════════════ -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+
+    <!-- ═══════════════════════════════════════════════════
+         JSON-LD STRUCTURED DATA
+    ═══════════════════════════════════════════════════ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ParkEasy",
+      "description": "Smart parking management system with pre-booking, walk-in check-in, watchman dashboard, and real-time slot tracking.",
+      "url": "https://parking-management-afot.onrender.com",
+      "sameAs": "https://github.com/Adinath-Jagtap/parking-management",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Web",
+      "author": [
+        {"@type": "Person", "name": "Adinath Somnath Jagtap", "url": "https://github.com/Adinath-Jagtap"},
+        {"@type": "Person", "name": "Prajwal Ashok Zolage"},
+        {"@type": "Person", "name": "Viraj Vikram Kakade"},
+        {"@type": "Person", "name": "Anurag Amale"}
+      ],
+      "publisher": {
+        "@type": "EducationalOrganization",
+        "name": "Terna Engineering College",
+        "url": "https://www.terna.ac.in"
+      },
+      "keywords": "parking management, smart parking, pre-book parking, parking slot booking",
+      "codeRepository": "https://github.com/Adinath-Jagtap/parking-management"
+    }
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -338,6 +404,7 @@
            MAIN CONTENT
            ═══════════════════════════════════════ */
         .pk-main { padding: 24px 0 60px; }
+        .pk-main-fullwidth { padding: 0 0 0; }
 
         .pk-page-title {
             font-weight: 900;
@@ -748,7 +815,7 @@
     </nav>
 
     <!-- ═══ MAIN CONTENT ═══ -->
-    <div class="container pk-main">
+    <div class="{% block main_class %}container pk-main{% endblock %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}

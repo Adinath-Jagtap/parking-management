@@ -1014,6 +1014,82 @@ def estimate_fee_api(lot_id):
         return jsonify({'success': False, 'message': 'Failed to estimate fee'}), 500
 
 # Pre-booking Routes
+@app.route('/user/prebook/available-slots/<lot_id>')
+@login_required
+@role_required('user')
+def prebook_available_slots(lot_id):
+    """Return per-slot availability for a given lot, vehicle_type, and time window."""
+    try:
+        lot = parking_lots_collection.find_one({'_id': ObjectId(lot_id)})
+        if not lot:
+            return jsonify({'success': False, 'message': 'Parking lot not found.'}), 404
+
+        start_str = request.args.get('start_time', '').strip()
+        end_str = request.args.get('end_time', '').strip()
+        vehicle_type = request.args.get('vehicle_type', '').strip()
+
+        if not start_str or not end_str or not vehicle_type:
+            return jsonify({'success': False, 'message': 'start_time, end_time, and vehicle_type are required.'})
+
+        try:
+            start_time = datetime.fromisoformat(start_str)
+            end_time = datetime.fromisoformat(end_str)
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Invalid datetime format. Use ISO format (YYYY-MM-DDTHH:MM).'})
+
+        if end_time <= start_time:
+            return jsonify({'success': False, 'message': 'end_time must be after start_time.'})
+
+        prebook_slots = list(parking_slots_collection.find({
+            'lot_id': ObjectId(lot_id),
+            'slot_type': vehicle_type,
+            'mode': 'prebook'
+        }).sort('slot_number', ASCENDING))
+
+        slots_result = []
+        for slot in prebook_slots:
+            conflicting_bookings = list(bookings_collection.find({
+                'slot_id': slot['_id'],
+                'status': {'$in': ['reserved', 'active']},
+                'booked_start': {'$lt': end_time},
+                'booked_end': {'$gt': start_time}
+            }))
+
+            if not conflicting_bookings:
+                slots_result.append({
+                    'slot_id': str(slot['_id']),
+                    'slot_number': slot['slot_number'],
+                    'status': 'available',
+                    'free_at': None
+                })
+            else:
+                latest_end = max(b['booked_end'] for b in conflicting_bookings)
+                free_at_ist = latest_end + timedelta(minutes=20)
+                slots_result.append({
+                    'slot_id': str(slot['_id']),
+                    'slot_number': slot['slot_number'],
+                    'status': 'occupied',
+                    'free_at': free_at_ist.strftime('%H:%M')
+                })
+
+        # Determine price_per_hour from lot or first slot
+        price_per_hour = None
+        if vehicle_type == '2-wheeler':
+            price_per_hour = lot.get('two_wheeler_price')
+        elif vehicle_type == '4-wheeler':
+            price_per_hour = lot.get('four_wheeler_price')
+        if price_per_hour is None and prebook_slots:
+            price_per_hour = prebook_slots[0].get('price_per_hour')
+
+        return jsonify({
+            'success': True,
+            'slots': slots_result,
+            'price_per_hour': price_per_hour
+        })
+    except Exception as e:
+        logger.error(f'Prebook available slots error: {str(e)}')
+        return jsonify({'success': False, 'message': 'Failed to fetch available slots.'}), 500
+
 @app.route('/user/prebook/<lot_id>', methods=['GET', 'POST'])
 @login_required
 @role_required('user')
@@ -1060,19 +1136,43 @@ def prebook_slot(lot_id):
                 'slot_type': vehicle['vehicle_type'],
                 'mode': 'prebook'
             }))
-            
+
             available_slot = None
-            for slot in prebook_slots:
-                conflict_booking = bookings_collection.find_one({
-                    'slot_id': slot['_id'],
+
+            # CHANGE 2: Check if user pre-selected a specific slot
+            selected_slot_id = request.form.get('selected_slot_id', '').strip()
+            if selected_slot_id:
+                selected_slot = parking_slots_collection.find_one({
+                    '_id': ObjectId(selected_slot_id),
+                    'lot_id': ObjectId(lot_id),
+                    'mode': 'prebook',
+                    'slot_type': vehicle['vehicle_type']
+                })
+                if not selected_slot:
+                    flash('Selected slot not valid.', 'danger')
+                    return redirect(url_for('prebook_slot', lot_id=lot_id))
+                slot_conflict = bookings_collection.find_one({
+                    'slot_id': selected_slot['_id'],
                     'status': {'$in': ['reserved', 'active']},
                     'booked_start': {'$lt': end_time},
                     'booked_end': {'$gt': start_time}
                 })
-                if not conflict_booking:
-                    available_slot = slot
-                    break
-            
+                if slot_conflict:
+                    flash('Selected slot is no longer available. Please choose another.', 'danger')
+                    return redirect(url_for('prebook_slot', lot_id=lot_id))
+                available_slot = selected_slot
+            else:
+                for slot in prebook_slots:
+                    conflict_booking = bookings_collection.find_one({
+                        'slot_id': slot['_id'],
+                        'status': {'$in': ['reserved', 'active']},
+                        'booked_start': {'$lt': end_time},
+                        'booked_end': {'$gt': start_time}
+                    })
+                    if not conflict_booking:
+                        available_slot = slot
+                        break
+
             if not available_slot:
                 flash('No pre-book slots available for your vehicle type in that time window.', 'danger')
                 return redirect(url_for('prebook_slot', lot_id=lot_id))
@@ -2774,15 +2874,15 @@ def watchman_scan_qr():
                     'message': f'Vehicle is already parked at {parked_lot_name}. It must be checked out there first.'
                 })
             
-            # Find available WALKIN slot matching vehicle type (never assign prebook slots for walk-ins)
-            available_slot = parking_slots_collection.find_one({
+            # CHANGE 3: Return all available walk-in slots to watchman for selection
+            available_slots = list(parking_slots_collection.find({
                 'lot_id': watchman_lot_id,
                 'slot_type': vehicle['vehicle_type'],
                 'mode': 'walkin',
                 'status': 'available'
-            })
-            
-            if not available_slot:
+            }).sort('slot_number', ASCENDING))
+
+            if not available_slots:
                 # Release the lock since we can't actually park
                 vehicles_collection.update_one(
                     {'_id': vehicle['_id']},
@@ -2800,48 +2900,134 @@ def watchman_scan_qr():
                     'success': False,
                     'message': f'No available walk-in {vehicle["vehicle_type"]} slots in this lot.'
                 })
-            
-            # Create walk-in booking
-            booking_data = {
-                'user_id': vehicle['user_id'],
-                'slot_id': available_slot['_id'],
-                'vehicle_id': vehicle['_id'],
-                'lot_id': watchman_lot_id,
-                'booking_type': 'walkin',
-                'entry_time': now,
-                'exit_time': None,
-                'status': 'active',
-                'checked_in_by_watchman_id': ObjectId(current_user.id),
-                'checked_in_lot_id': watchman_lot_id,
-                'created_at': now
-            }
-            bookings_collection.insert_one(booking_data)
-            
-            parking_slots_collection.update_one(
-                {'_id': available_slot['_id']},
-                {'$set': {'status': 'occupied'}}
+
+            # Slots are available — release the temporary lock now.
+            # The actual lock will be re-acquired atomically in /watchman/checkin-assign-slot.
+            vehicles_collection.update_one(
+                {'_id': vehicle['_id']},
+                {'$set': {'currently_parked': False}}
             )
-            
-            scan_logs_collection.insert_one({
-                'watchman_id': ObjectId(current_user.id),
-                'lot_id': watchman_lot_id,
-                'vehicle_id': vehicle['_id'],
-                'action': 'checkin',
-                'result_message': f'Checked in at slot {available_slot["slot_number"]}',
-                'timestamp': now
-            })
-            
-            logger.info(f'Watchman checkin: Vehicle {vehicle_number}, Slot {available_slot["slot_number"]}')
+
             return jsonify({
                 'success': True,
-                'action': 'checkin',
-                'slot_number': available_slot['slot_number'],
-                'message': f'Vehicle {vehicle_number} checked in at slot {available_slot["slot_number"]}'
+                'action': 'walkin_select_slot',
+                'vehicle_id': str(vehicle['_id']),
+                'vehicle_number': vehicle_number,
+                'vehicle_type': vehicle['vehicle_type'],
+                'slots': [{'slot_id': str(s['_id']), 'slot_number': s['slot_number']} for s in available_slots]
             })
     
     except Exception as e:
         logger.error(f'Watchman scan error: {str(e)}')
         return jsonify({'success': False, 'message': 'An error occurred processing the scan'}), 500
+
+# CHANGE 4: Watchman assigns a specific slot and completes walk-in check-in
+@app.route('/watchman/checkin-assign-slot', methods=['POST'])
+@login_required
+@role_required('watchman')
+@csrf.exempt
+def watchman_checkin_assign_slot():
+    """Watchman selects a specific walk-in slot and checks the vehicle in atomically."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'JSON body required.'}), 400
+
+        vehicle_id = data.get('vehicle_id', '').strip()
+        slot_id = data.get('slot_id', '').strip()
+
+        if not vehicle_id or not slot_id:
+            return jsonify({'success': False, 'message': 'vehicle_id and slot_id are required.'}), 400
+
+        # 2. Find vehicle
+        try:
+            vehicle = vehicles_collection.find_one({'_id': ObjectId(vehicle_id)})
+        except Exception:
+            return jsonify({'success': False, 'message': 'Invalid vehicle_id.'}), 400
+        if not vehicle:
+            return jsonify({'success': False, 'message': 'Vehicle not found.'}), 404
+
+        watchman_lot_id = current_user.lot_id
+
+        # 3. Find and validate slot
+        try:
+            slot = parking_slots_collection.find_one({
+                '_id': ObjectId(slot_id),
+                'lot_id': watchman_lot_id,
+                'mode': 'walkin',
+                'status': 'available'
+            })
+        except Exception:
+            return jsonify({'success': False, 'message': 'Invalid slot_id.'}), 400
+        if not slot or slot.get('status') != 'available':
+            return jsonify({'success': False, 'message': 'Slot is no longer available. Please select another.'})
+
+        # 4. Atomic lock on vehicle
+        lock_result = vehicles_collection.find_one_and_update(
+            {'_id': vehicle['_id'], 'currently_parked': {'$ne': True}},
+            {'$set': {'currently_parked': True}}
+        )
+        if lock_result is None:
+            return jsonify({'success': False, 'message': 'Vehicle is already parked somewhere.'})
+
+        # 5. Re-check slot is still available after acquiring vehicle lock
+        slot_check = parking_slots_collection.find_one({'_id': ObjectId(slot_id), 'status': 'available'})
+        if not slot_check:
+            # Release vehicle lock
+            vehicles_collection.update_one(
+                {'_id': vehicle['_id']},
+                {'$set': {'currently_parked': False}}
+            )
+            return jsonify({'success': False, 'message': 'Slot was just taken. Please select another slot.'})
+
+        now = now_ist()
+
+        # 6. Create walk-in booking
+        booking_data = {
+            'user_id': vehicle['user_id'],
+            'slot_id': slot['_id'],
+            'vehicle_id': vehicle['_id'],
+            'lot_id': watchman_lot_id,
+            'booking_type': 'walkin',
+            'entry_time': now,
+            'exit_time': None,
+            'status': 'active',
+            'checked_in_by_watchman_id': ObjectId(current_user.id),
+            'checked_in_lot_id': watchman_lot_id,
+            'created_at': now
+        }
+        bookings_collection.insert_one(booking_data)
+
+        # 7. Update slot status to occupied
+        parking_slots_collection.update_one(
+            {'_id': slot['_id']},
+            {'$set': {'status': 'occupied'}}
+        )
+
+        # 8. Insert scan log
+        scan_logs_collection.insert_one({
+            'watchman_id': ObjectId(current_user.id),
+            'lot_id': watchman_lot_id,
+            'vehicle_id': vehicle['_id'],
+            'action': 'checkin',
+            'result_message': f'Walk-in checked in at slot {slot["slot_number"]} (watchman slot selection)',
+            'timestamp': now
+        })
+
+        logger.info(f'Watchman slot-assign checkin: Vehicle {vehicle["vehicle_number"]}, Slot {slot["slot_number"]}')
+
+        # 9. Return success
+        return jsonify({
+            'success': True,
+            'action': 'checkin',
+            'slot_number': slot['slot_number'],
+            'vehicle_number': vehicle['vehicle_number'],
+            'message': f'Vehicle {vehicle["vehicle_number"]} checked in at slot {slot["slot_number"]}'
+        })
+
+    except Exception as e:
+        logger.error(f'Checkin assign slot error: {str(e)}')
+        return jsonify({'success': False, 'message': 'An error occurred during slot assignment.'}), 500
 
 @app.route('/watchman/recent-scans')
 @login_required
@@ -2917,6 +3103,20 @@ def watchman_pay_invoice(invoice_id):
                 {'_id': invoice['_id']},
                 {'$set': {'payment_status': 'paid_wallet', 'paid_at': now_ist()}}
             )
+            # CHANGE 5: Update the matching 'payment pending' scan_log to reflect wallet payment
+            recent_log = scan_logs_collection.find_one(
+                {
+                    'lot_id': current_user.lot_id,
+                    'action': 'checkout',
+                    'result_message': {'$regex': 'payment pending', '$options': 'i'}
+                },
+                sort=[('timestamp', DESCENDING)]
+            )
+            if recent_log:
+                scan_logs_collection.update_one(
+                    {'_id': recent_log['_id']},
+                    {'$set': {'result_message': f'Checked out. Fee: Rs.{amount} — paid via wallet.'}}
+                )
             logger.info(f'Invoice {invoice_id} paid via wallet')
             return jsonify({'success': True, 'message': f'Rs.{amount} deducted from wallet successfully.', 'payment_status': 'paid_wallet'})
         
@@ -3212,6 +3412,45 @@ def super_admin_unpaid_invoices():
         logger.error(f'Unpaid invoices error: {str(e)}')
         flash('Failed to load unpaid invoices.', 'danger')
         return redirect(url_for('super_admin_dashboard'))
+
+# ─────────────────────────────────────────────────────────────
+# SEO — Public utility routes (no auth required)
+# ─────────────────────────────────────────────────────────────
+@app.route('/robots.txt')
+def robots_txt():
+    content = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Allow: /user/parking-lots\n"
+        "Disallow: /admin/\n"
+        "Disallow: /super-admin/\n"
+        "Disallow: /watchman/\n"
+        "Disallow: /user/dashboard\n"
+        "Disallow: /user/wallet\n"
+        "Disallow: /user/my-bookings\n"
+        "Sitemap: https://parking-management-afot.onrender.com/sitemap.xml\n"
+    )
+    return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    from flask import make_response
+    content = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        '  <url><loc>https://parking-management-afot.onrender.com/</loc>'
+        '<priority>1.0</priority><changefreq>weekly</changefreq></url>\n'
+        '  <url><loc>https://parking-management-afot.onrender.com/auth/login</loc>'
+        '<priority>0.8</priority><changefreq>monthly</changefreq></url>\n'
+        '  <url><loc>https://parking-management-afot.onrender.com/auth/register</loc>'
+        '<priority>0.8</priority><changefreq>monthly</changefreq></url>\n'
+        '  <url><loc>https://parking-management-afot.onrender.com/user/parking-lots</loc>'
+        '<priority>0.9</priority><changefreq>daily</changefreq></url>\n'
+        '</urlset>'
+    )
+    resp = make_response(content)
+    resp.headers['Content-Type'] = 'application/xml; charset=utf-8'
+    return resp
 
 if __name__ == '__main__':
     create_super_admin()
