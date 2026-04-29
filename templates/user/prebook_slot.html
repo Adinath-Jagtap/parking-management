@@ -17,7 +17,7 @@
                 <hr style="border-color:var(--pk-border);">
                 <h6 class="fw-bold mb-3">Pre-book Slots Available:</h6>
                 <div class="row text-center g-2">
-                    <div class="col-6">
+                    <div class="col-6" id="count-col-2w">
                         <div class="card" style="background:var(--pk-primary-light);border-color:var(--pk-border);">
                             <div class="card-body py-3">
                                 <h3 class="fw-bold mb-0" style="color:var(--pk-success);">{{ prebook_2w }}</h3>
@@ -25,7 +25,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-6" id="count-col-4w">
                         <div class="card" style="background:var(--pk-primary-light);border-color:var(--pk-border);">
                             <div class="card-body py-3">
                                 <h3 class="fw-bold mb-0" style="color:var(--pk-success);">{{ prebook_4w }}</h3>
@@ -237,7 +237,26 @@
 
     function getVehicleType() {
         var text = vehicleSelect.options[vehicleSelect.selectedIndex].text;
-        return text.indexOf('4-Wheeler') !== -1 ? '4-wheeler' : '2-wheeler';
+        return text.toLowerCase().indexOf('4-wheeler') !== -1 ? '4-wheeler' : '2-wheeler';
+    }
+
+    function updateSlotCounts() {
+        var vehicleType = getVehicleType();
+        var col2w = document.getElementById('count-col-2w');
+        var col4w = document.getElementById('count-col-4w');
+        if (col2w && col4w) {
+            if (vehicleType === '4-wheeler') {
+                col2w.classList.add('d-none');
+                col4w.classList.remove('d-none');
+                col4w.classList.remove('col-6');
+                col4w.classList.add('col-12');
+            } else {
+                col4w.classList.add('d-none');
+                col2w.classList.remove('d-none');
+                col2w.classList.remove('col-6');
+                col2w.classList.add('col-12');
+            }
+        }
     }
 
     function updateSubmitButton() {
@@ -436,6 +455,12 @@
     });
 
     endInput.addEventListener('change', estimateFee);
-    vehicleSelect.addEventListener('change', estimateFee);
+    vehicleSelect.addEventListener('change', function() {
+        updateSlotCounts();
+        estimateFee();
+    });
+
+    // Initialize display on load
+    updateSlotCounts();
 </script>
 {% endblock %}
