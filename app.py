@@ -3452,6 +3452,7 @@ def sitemap_xml():
     resp.headers['Content-Type'] = 'application/xml; charset=utf-8'
     return resp
 
+
 if __name__ == '__main__':
     create_super_admin()
     migrate_currently_parked()
