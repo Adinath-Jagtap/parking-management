@@ -1,9 +1,9 @@
 <div align="center">
 
-<!-- Animated Banner -->
+
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1a1a2e,50:16213e,100:0f3460&height=220&section=header&text=ParkEasy%20🚗&fontSize=68&fontColor=e94560&fontAlignY=38&desc=Intelligent%20Multi-Role%20Parking%20Management%20Platform&descAlignY=62&descColor=a8b2d8&animation=fadeIn" width="100%"/>
 
-<!-- Badge Row -->
+
 <p align="center">
   <a href="https://parking-management-afot.onrender.com/" target="_blank">
     <img src="https://img.shields.io/badge/🌐%20Live%20Demo-parking--management--afot.onrender.com-e94560?style=for-the-badge&labelColor=1a1a2e" alt="Live Demo"/>
