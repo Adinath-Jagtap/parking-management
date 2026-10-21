@@ -401,6 +401,6 @@ This project was developed for educational and academic purposes at Terna Engine
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f3460,50:16213e,100:1a1a2e&height=100&section=footer&fontSize=20&fontColor=e94560" width="100%"/>
 
-**Made with ❤️ by Team ParkEasy · Terna Engineering College · 2026**
+**Made with ❤️ by Team ParkEasy · Terna Engineering College ·> 2026**
 
 </div>
