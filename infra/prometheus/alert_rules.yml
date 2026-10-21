@@ -1,0 +1,18 @@
+groups:
+  - name: parkeasy-alerts
+    rules:
+      - alert: AppDown
+        expr: up{job="parkeasy-app"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "ParkEasy application is down"
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 80
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU usage is above 80%"

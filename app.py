@@ -27,6 +27,8 @@ import hashlib
 import razorpay
 from apscheduler.schedulers.background import BackgroundScheduler
 from zoneinfo import ZoneInfo
+from prometheus_flask_exporter import PrometheusMetrics
+from prometheus_client import Counter
 IST = ZoneInfo('Asia/Kolkata')
 
 def now_ist():
@@ -77,6 +79,10 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["2000 per day", "500 per hour"])
 razorpay_client = razorpay.Client(auth=(app.config['RAZORPAY_KEY_ID'], app.config['RAZORPAY_KEY_SECRET'])) if app.config['RAZORPAY_KEY_ID'] else None
+
+# Prometheus metrics (/metrics) and custom counter
+metrics = PrometheusMetrics(app)
+checkins_total = Counter('parking_checkins_total', 'Total vehicle check-ins')
 
 # APScheduler for background jobs (no-show handling)
 scheduler = BackgroundScheduler(daemon=True)
@@ -342,7 +348,6 @@ def register():
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
-
     
     form = LoginForm()
     if form.validate_on_submit():
@@ -2838,6 +2843,7 @@ def watchman_scan_qr():
                     'timestamp': now
                 })
 
+                checkins_total.inc()
                 logger.info(f'Watchman pre-book checkin: Vehicle {vehicle_number}, Slot {reserved_slot["slot_number"]}')
                 return jsonify({
                     'success': True,
@@ -3015,6 +3021,7 @@ def watchman_checkin_assign_slot():
             'timestamp': now
         })
 
+        checkins_total.inc()
         logger.info(f'Watchman slot-assign checkin: Vehicle {vehicle["vehicle_number"]}, Slot {slot["slot_number"]}')
 
         # 9. Return success
