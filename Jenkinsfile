@@ -84,8 +84,8 @@ pipeline {
                         /usr/bin/docker run -d --name parkeasy-app --network devops-net -p 5000:5000 \
                             --env-file $ENV_FILE -v parkeasy-uploads:/app/static/uploads \
                             $DH_USER/$IMAGE_NAME:latest
-                        sleep 10
-                        curl -f http://parkeasy-app:5000/health
+                        sleep 15
+                        curl -f http://host.docker.internal:5000/health
                     '''
                 }
             }
