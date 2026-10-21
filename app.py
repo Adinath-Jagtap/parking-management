@@ -28,7 +28,7 @@ import razorpay
 from apscheduler.schedulers.background import BackgroundScheduler
 from zoneinfo import ZoneInfo
 from prometheus_flask_exporter import PrometheusMetrics
-from prometheus_client import Counter
+from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 IST = ZoneInfo('Asia/Kolkata')
 
 def now_ist():
@@ -80,9 +80,15 @@ login_manager.login_view = 'login'
 limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["2000 per day", "500 per hour"])
 razorpay_client = razorpay.Client(auth=(app.config['RAZORPAY_KEY_ID'], app.config['RAZORPAY_KEY_SECRET'])) if app.config['RAZORPAY_KEY_ID'] else None
 
-# Prometheus metrics (/metrics) and custom counter
-metrics = PrometheusMetrics(app)
+# Prometheus metrics and custom counter
+# path=None disables auto-registration (avoids 404 bug); we register manually below
+metrics = PrometheusMetrics(app, path=None)
 checkins_total = Counter('parking_checkins_total', 'Total vehicle check-ins')
+
+@app.route('/metrics')
+def prometheus_metrics():
+    """Expose Prometheus metrics for scraping."""
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
 # APScheduler for background jobs (no-show handling)
 scheduler = BackgroundScheduler(daemon=True)
