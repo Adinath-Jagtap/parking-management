@@ -54,7 +54,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
                     sh '''
-                        docker build -t $DH_USER/$IMAGE_NAME:$BUILD_NUMBER -t $DH_USER/$IMAGE_NAME:latest .
+                        /usr/bin/docker build -t $DH_USER/$IMAGE_NAME:$BUILD_NUMBER -t $DH_USER/$IMAGE_NAME:latest .
                     '''
                 }
             }
@@ -64,9 +64,9 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
                     sh '''
-                        echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
-                        docker push $DH_USER/$IMAGE_NAME:$BUILD_NUMBER
-                        docker push $DH_USER/$IMAGE_NAME:latest
+                        echo "$DH_PASS" | /usr/bin/docker login -u "$DH_USER" --password-stdin
+                        /usr/bin/docker push $DH_USER/$IMAGE_NAME:$BUILD_NUMBER
+                        /usr/bin/docker push $DH_USER/$IMAGE_NAME:latest
                     '''
                 }
             }
@@ -79,9 +79,9 @@ pipeline {
                     file(credentialsId: 'parkeasy-env', variable: 'ENV_FILE')
                 ]) {
                     sh '''
-                        docker network create devops-net || true
-                        docker rm -f parkeasy-app || true
-                        docker run -d --name parkeasy-app --network devops-net -p 5000:5000 \
+                        /usr/bin/docker network create devops-net || true
+                        /usr/bin/docker rm -f parkeasy-app || true
+                        /usr/bin/docker run -d --name parkeasy-app --network devops-net -p 5000:5000 \
                             --env-file $ENV_FILE -v parkeasy-uploads:/app/static/uploads \
                             $DH_USER/$IMAGE_NAME:latest
                         sleep 10
